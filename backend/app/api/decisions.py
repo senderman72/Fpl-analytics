@@ -3,7 +3,7 @@
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
@@ -47,7 +47,8 @@ async def _get_fdr_next_5(session: AsyncSession, next_gw: int) -> dict[int, Deci
 
     return {
         tid: Decimal(str(round(sum(fdrs) / len(fdrs), 2)))
-        for tid, fdrs in team_fdrs.items() if fdrs
+        for tid, fdrs in team_fdrs.items()
+        if fdrs
     }
 
 
@@ -61,9 +62,10 @@ async def get_buy_candidates(
     stmt = (
         select(Player, Team.short_name, PlayerFormCache)
         .join(Team, Player.team_id == Team.id)
-        .join(PlayerFormCache,
-              (PlayerFormCache.player_id == Player.id)
-              & (PlayerFormCache.gw_window == 6))
+        .join(
+            PlayerFormCache,
+            (PlayerFormCache.player_id == Player.id) & (PlayerFormCache.gw_window == 6),
+        )
         .where(Player.status == "a", PlayerFormCache.minutes_pct > 30)
     )
     if position:
@@ -81,14 +83,21 @@ async def get_buy_candidates(
     for player, team_short, form in rows:
         cost_m = Decimal(player.now_cost) / 10
         ppm = Decimal(form.total_points) / cost_m if cost_m > 0 else Decimal("0")
-        candidates.append(BuyCandidate(
-            player_id=player.id, web_name=player.web_name,
-            team_short_name=team_short, position=player.position,
-            now_cost=player.now_cost, form_points=form.total_points,
-            pts_per_game=form.pts_per_game, xgi_per_90=form.xgi_per_90,
-            minutes_pct=form.minutes_pct, ppm=round(ppm, 2),
-            fdr_next_5=fdr_map.get(player.team_id),
-        ))
+        candidates.append(
+            BuyCandidate(
+                player_id=player.id,
+                web_name=player.web_name,
+                team_short_name=team_short,
+                position=player.position,
+                now_cost=player.now_cost,
+                form_points=form.total_points,
+                pts_per_game=form.pts_per_game,
+                xgi_per_90=form.xgi_per_90,
+                minutes_pct=form.minutes_pct,
+                ppm=round(ppm, 2),
+                fdr_next_5=fdr_map.get(player.team_id),
+            )
+        )
 
     def rank_score(c: BuyCandidate) -> float:
         xgi = float(c.xgi_per_90)
@@ -111,9 +120,10 @@ async def get_captain_picks(
     stmt = (
         select(Player, Team.short_name, PlayerFormCache)
         .join(Team, Player.team_id == Team.id)
-        .join(PlayerFormCache,
-              (PlayerFormCache.player_id == Player.id)
-              & (PlayerFormCache.gw_window == 6))
+        .join(
+            PlayerFormCache,
+            (PlayerFormCache.player_id == Player.id) & (PlayerFormCache.gw_window == 6),
+        )
         .where(Player.status == "a", PlayerFormCache.minutes_pct > 50)
     )
     result = await session.execute(stmt)
@@ -123,7 +133,7 @@ async def get_captain_picks(
     current_result = await session.execute(
         select(Gameweek.id).where(Gameweek.is_current == True)  # noqa: E712
     )
-    current_gw = (current_result.scalar() or 31)
+    current_gw = current_result.scalar() or 31
 
     ceiling_result = await session.execute(
         select(PlayerGWStats.player_id, func.max(PlayerGWStats.total_points))
@@ -141,23 +151,35 @@ async def get_captain_picks(
             .where(Fixture.gameweek_id == next_gw)
         )
         for fix, is_double in fix_result.all():
-            next_fixtures[fix.home_team_id] = {"is_home": True, "is_double": is_double or False}
+            next_fixtures[fix.home_team_id] = {
+                "is_home": True,
+                "is_double": is_double or False,
+            }
             if fix.away_team_id not in next_fixtures:
-                next_fixtures[fix.away_team_id] = {"is_home": False, "is_double": is_double or False}
+                next_fixtures[fix.away_team_id] = {
+                    "is_home": False,
+                    "is_double": is_double or False,
+                }
 
     picks = []
     for player, team_short, form in rows:
         fi = next_fixtures.get(player.team_id, {})
-        picks.append(CaptainPick(
-            player_id=player.id, web_name=player.web_name,
-            team_short_name=team_short, position=player.position,
-            now_cost=player.now_cost,
-            ceiling_score=ceilings.get(player.id, 0),
-            bps_avg=form.bps_avg, form_points=form.total_points,
-            is_home=fi.get("is_home"), is_double_gw=fi.get("is_double", False),
-            is_penalty_taker=player.is_penalty_taker,
-            is_set_piece_taker=player.is_set_piece_taker,
-        ))
+        picks.append(
+            CaptainPick(
+                player_id=player.id,
+                web_name=player.web_name,
+                team_short_name=team_short,
+                position=player.position,
+                now_cost=player.now_cost,
+                ceiling_score=ceilings.get(player.id, 0),
+                bps_avg=form.bps_avg,
+                form_points=form.total_points,
+                is_home=fi.get("is_home"),
+                is_double_gw=fi.get("is_double", False),
+                is_penalty_taker=player.is_penalty_taker,
+                is_set_piece_taker=player.is_set_piece_taker,
+            )
+        )
 
     def rank_score(c: CaptainPick) -> float:
         return (
@@ -181,18 +203,24 @@ async def get_chip_advice(
     )
     gws = result.scalars().all()
 
-    return APIResponse(data=[
-        ChipAdvice(
-            gameweek_id=gw.id, name=gw.name,
-            is_double=gw.is_double, is_blank=gw.is_blank,
-            recommendation=(
-                "Bench Boost or Triple Captain candidate" if gw.is_double
-                else "Free Hit candidate" if gw.is_blank
-                else None
-            ),
-        )
-        for gw in gws
-    ])
+    return APIResponse(
+        data=[
+            ChipAdvice(
+                gameweek_id=gw.id,
+                name=gw.name,
+                is_double=gw.is_double,
+                is_blank=gw.is_blank,
+                recommendation=(
+                    "Bench Boost or Triple Captain candidate"
+                    if gw.is_double
+                    else "Free Hit candidate"
+                    if gw.is_blank
+                    else None
+                ),
+            )
+            for gw in gws
+        ]
+    )
 
 
 @router.get("/differentials", response_model=APIResponse[list[DifferentialPick]])
@@ -204,11 +232,15 @@ async def get_differentials(
     stmt = (
         select(Player, Team.short_name, PlayerFormCache)
         .join(Team, Player.team_id == Team.id)
-        .join(PlayerFormCache,
-              (PlayerFormCache.player_id == Player.id)
-              & (PlayerFormCache.gw_window == 6))
-        .where(Player.status == "a", PlayerFormCache.minutes_pct > 40,
-               PlayerFormCache.total_points > 10)
+        .join(
+            PlayerFormCache,
+            (PlayerFormCache.player_id == Player.id) & (PlayerFormCache.gw_window == 6),
+        )
+        .where(
+            Player.status == "a",
+            PlayerFormCache.minutes_pct > 40,
+            PlayerFormCache.total_points > 10,
+        )
     )
     result = await session.execute(stmt)
     rows = result.all()
@@ -226,12 +258,18 @@ async def get_differentials(
         own_pct = ownership.get(player.id, Decimal("0"))
         if own_pct > max_ownership:
             continue
-        picks.append(DifferentialPick(
-            player_id=player.id, web_name=player.web_name,
-            team_short_name=team_short, position=player.position,
-            now_cost=player.now_cost, selected_by_percent=own_pct,
-            form_points=form.total_points, xgi_per_90=form.xgi_per_90,
-        ))
+        picks.append(
+            DifferentialPick(
+                player_id=player.id,
+                web_name=player.web_name,
+                team_short_name=team_short,
+                position=player.position,
+                now_cost=player.now_cost,
+                selected_by_percent=own_pct,
+                form_points=form.total_points,
+                xgi_per_90=form.xgi_per_90,
+            )
+        )
 
     picks.sort(key=lambda p: float(p.xgi_per_90), reverse=True)
     return APIResponse(data=picks[:limit])

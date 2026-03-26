@@ -30,7 +30,10 @@ async def list_players(
     position: int | None = Query(None, ge=1, le=4),
     team_id: int | None = Query(None),
     search: str | None = Query(None, min_length=2),
-    sort_by: str = Query("form_points", pattern="^(form_points|now_cost|xgi_per_90|pts_per_game|minutes_pct)$"),
+    sort_by: str = Query(
+        "form_points",
+        pattern="^(form_points|now_cost|xgi_per_90|pts_per_game|minutes_pct)$",
+    ),
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     session: AsyncSession = Depends(get_session),
@@ -40,8 +43,7 @@ async def list_players(
         .join(Team, Player.team_id == Team.id)
         .outerjoin(
             PlayerFormCache,
-            (PlayerFormCache.player_id == Player.id)
-            & (PlayerFormCache.gw_window == 6),
+            (PlayerFormCache.player_id == Player.id) & (PlayerFormCache.gw_window == 6),
         )
     )
 
@@ -91,7 +93,9 @@ async def list_players(
     total = len(players)
     players = players[offset : offset + limit]
 
-    return APIResponse(data=players, meta={"total": total, "limit": limit, "offset": offset})
+    return APIResponse(
+        data=players, meta={"total": total, "limit": limit, "offset": offset}
+    )
 
 
 @router.get("/{player_id}", response_model=APIResponse[PlayerDetail])
@@ -110,8 +114,9 @@ async def get_player(
     player, team_short = row
 
     form_result = await session.execute(
-        select(PlayerFormCache)
-        .where(PlayerFormCache.player_id == player_id, PlayerFormCache.gw_window == 6)
+        select(PlayerFormCache).where(
+            PlayerFormCache.player_id == player_id, PlayerFormCache.gw_window == 6
+        )
     )
     form = form_result.scalars().first()
 
@@ -165,14 +170,23 @@ async def get_player_history(
     return APIResponse(
         data=[
             PlayerGWHistory(
-                gameweek_id=s.gameweek_id, fixture_id=s.fixture_id,
-                minutes=s.minutes, goals_scored=s.goals_scored,
-                assists=s.assists, clean_sheets=s.clean_sheets,
-                goals_conceded=s.goals_conceded, bonus=s.bonus, bps=s.bps,
-                influence=s.influence, creativity=s.creativity,
-                threat=s.threat, ict_index=s.ict_index,
-                total_points=s.total_points, transfers_in=s.transfers_in,
-                transfers_out=s.transfers_out, value=s.value,
+                gameweek_id=s.gameweek_id,
+                fixture_id=s.fixture_id,
+                minutes=s.minutes,
+                goals_scored=s.goals_scored,
+                assists=s.assists,
+                clean_sheets=s.clean_sheets,
+                goals_conceded=s.goals_conceded,
+                bonus=s.bonus,
+                bps=s.bps,
+                influence=s.influence,
+                creativity=s.creativity,
+                threat=s.threat,
+                ict_index=s.ict_index,
+                total_points=s.total_points,
+                transfers_in=s.transfers_in,
+                transfers_out=s.transfers_out,
+                value=s.value,
             )
             for s in stats
         ]
@@ -213,11 +227,15 @@ async def get_player_fixtures(
         difficulty = fixture.home_difficulty if is_home else fixture.away_difficulty
         fixtures.append(
             PlayerFixture(
-                fixture_id=fixture.id, gameweek_id=fixture.gameweek_id,
+                fixture_id=fixture.id,
+                gameweek_id=fixture.gameweek_id,
                 opponent_team_id=opp_id,
                 opponent_short_name=team_names.get(opp_id, "???"),
-                is_home=is_home, difficulty=difficulty,
-                kickoff_time=fixture.kickoff_time.isoformat() if fixture.kickoff_time else None,
+                is_home=is_home,
+                difficulty=difficulty,
+                kickoff_time=fixture.kickoff_time.isoformat()
+                if fixture.kickoff_time
+                else None,
                 is_double_gw=is_double or False,
             )
         )

@@ -15,7 +15,7 @@ __all__ = [
     "Player",
     "PlayerFormCache",
     "PlayerGWStats",
-    "PlayerSeasonXG",
     "PlayerPrice",
+    "PlayerSeasonXG",
     "Team",
 ]

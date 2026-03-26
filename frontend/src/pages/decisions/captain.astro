@@ -1,0 +1,51 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCaptainPicks } from '../../api/decisions';
+import { POSITIONS, formatCost } from '../../lib/types';
+
+const picks = await getCaptainPicks(15);
+---
+
+<Layout title="Captain Picker">
+  <h1 class="text-2xl font-bold text-white mb-4">Captain Picks</h1>
+  <p class="text-gray-400 mb-6">Ranked by ceiling (40%) + form (30%) + BPS average (20%) + home/DGW bonus</p>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-gray-400 border-b border-gray-700">
+          <th class="py-2 px-2">#</th>
+          <th class="py-2 px-2">Player</th>
+          <th class="py-2 px-2">Team</th>
+          <th class="py-2 px-2">Pos</th>
+          <th class="py-2 px-2 text-right">Ceiling</th>
+          <th class="py-2 px-2 text-right">Form</th>
+          <th class="py-2 px-2 text-right">BPS Avg</th>
+          <th class="py-2 px-2 text-center">Home</th>
+          <th class="py-2 px-2 text-center">DGW</th>
+          <th class="py-2 px-2 text-center">Pens</th>
+          <th class="py-2 px-2 text-center">Set P</th>
+        </tr>
+      </thead>
+      <tbody>
+        {picks.map((c, i) => (
+          <tr class="border-b border-gray-800 hover:bg-fpl-card/50">
+            <td class="py-2 px-2 text-gray-500">{i + 1}</td>
+            <td class="py-2 px-2">
+              <a href={`/players/${c.player_id}`} class="text-fpl-cyan hover:underline font-medium">{c.web_name}</a>
+            </td>
+            <td class="py-2 px-2 text-gray-400">{c.team_short_name}</td>
+            <td class="py-2 px-2 text-gray-400">{POSITIONS[c.position]}</td>
+            <td class="py-2 px-2 text-right font-bold text-fpl-green">{c.ceiling_score}</td>
+            <td class="py-2 px-2 text-right">{c.form_points}</td>
+            <td class="py-2 px-2 text-right">{c.bps_avg}</td>
+            <td class="py-2 px-2 text-center">{c.is_home === true ? 'H' : c.is_home === false ? 'A' : '-'}</td>
+            <td class="py-2 px-2 text-center">{c.is_double_gw ? <span class="text-fpl-pink font-bold">DGW</span> : '-'}</td>
+            <td class="py-2 px-2 text-center">{c.is_penalty_taker ? <span class="text-fpl-green">Y</span> : '-'}</td>
+            <td class="py-2 px-2 text-center">{c.is_set_piece_taker ? <span class="text-fpl-cyan">Y</span> : '-'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</Layout>

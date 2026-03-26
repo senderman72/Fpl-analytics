@@ -11,13 +11,9 @@ from app.core.database import Base
 
 class PlayerFormCache(Base):
     __tablename__ = "player_form_cache"
-    __table_args__ = (
-        Index("idx_form_player", "player_id"),
-    )
+    __table_args__ = (Index("idx_form_player", "player_id"),)
 
-    player_id: Mapped[int] = mapped_column(
-        ForeignKey("players.id"), primary_key=True
-    )
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id"), primary_key=True)
     gw_window: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
     total_points: Mapped[int] = mapped_column(SmallInteger, server_default="0")
     pts_per_game: Mapped[Decimal] = mapped_column(Numeric(4, 2), server_default="0")

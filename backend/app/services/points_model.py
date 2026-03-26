@@ -33,14 +33,12 @@ def train_model() -> tuple[Ridge, StandardScaler]:
 
     with sync_session_factory() as session:
         # Get all GW stats with form and xG data
-        stats = session.query(PlayerGWStats).filter(
-            PlayerGWStats.minutes > 0
-        ).all()
+        stats = session.query(PlayerGWStats).filter(PlayerGWStats.minutes > 0).all()
 
         form_cache = {}
-        for fc in session.query(PlayerFormCache).filter(
-            PlayerFormCache.gw_window == 6
-        ).all():
+        for fc in (
+            session.query(PlayerFormCache).filter(PlayerFormCache.gw_window == 6).all()
+        ):
             form_cache[fc.player_id] = fc
 
         xg_data = {}
@@ -73,10 +71,16 @@ def train_model() -> tuple[Ridge, StandardScaler]:
         if not player or not form:
             continue
 
-        xgi_per_90 = float(xg.xgi / (Decimal(xg.minutes) / 90)) if xg and xg.minutes > 0 else 0
+        xgi_per_90 = (
+            float(xg.xgi / (Decimal(xg.minutes) / 90)) if xg and xg.minutes > 0 else 0
+        )
         season_xgi = float(xg.xgi) if xg else 0
         is_home = 1.0 if fixture and fixture.home_team_id == player.team_id else 0.0
-        fdr = float(fixture.home_difficulty if is_home else fixture.away_difficulty) if fixture else 3.0
+        fdr = (
+            float(fixture.home_difficulty if is_home else fixture.away_difficulty)
+            if fixture
+            else 3.0
+        )
         is_dgw = 1.0 if gw_double.get(s.gameweek_id) else 0.0
 
         features = [
@@ -95,7 +99,9 @@ def train_model() -> tuple[Ridge, StandardScaler]:
         y_rows.append(float(s.total_points))
 
     if len(X_rows) < 100:
-        logger.warning("Not enough training data (%d rows), skipping model fit", len(X_rows))
+        logger.warning(
+            "Not enough training data (%d rows), skipping model fit", len(X_rows)
+        )
         return Ridge(), StandardScaler()
 
     X = np.array(X_rows)
@@ -112,7 +118,8 @@ def train_model() -> tuple[Ridge, StandardScaler]:
 
     logger.info(
         "Points model trained on %d samples, R²=%.3f",
-        len(X_rows), model.score(X_scaled, y),
+        len(X_rows),
+        model.score(X_scaled, y),
     )
     return model, scaler
 
@@ -145,9 +152,7 @@ def predict_gw(gw_id: int) -> list[dict]:
             xg_data[xg.player_id] = xg
 
         # Get GW fixtures
-        gw_fixtures = session.query(Fixture).filter(
-            Fixture.gameweek_id == gw_id
-        ).all()
+        gw_fixtures = session.query(Fixture).filter(Fixture.gameweek_id == gw_id).all()
 
         gw_info = session.query(Gameweek).filter(Gameweek.id == gw_id).first()
         is_dgw = gw_info.is_double if gw_info else False
@@ -164,7 +169,9 @@ def predict_gw(gw_id: int) -> list[dict]:
             continue
 
         xg = xg_data.get(player.id)
-        xgi_per_90 = float(xg.xgi / (Decimal(xg.minutes) / 90)) if xg and xg.minutes > 0 else 0
+        xgi_per_90 = (
+            float(xg.xgi / (Decimal(xg.minutes) / 90)) if xg and xg.minutes > 0 else 0
+        )
         season_xgi = float(xg.xgi) if xg else 0
 
         player_fixtures = team_fixtures.get(player.team_id, [])
@@ -174,32 +181,44 @@ def predict_gw(gw_id: int) -> list[dict]:
         total_predicted = 0.0
         for fix in player_fixtures:
             is_home = fix.home_team_id == player.team_id
-            fdr = float(fix.home_difficulty if is_home else fix.away_difficulty) if fix else 3.0
+            fdr = (
+                float(fix.home_difficulty if is_home else fix.away_difficulty)
+                if fix
+                else 3.0
+            )
 
-            features = np.array([[
-                xgi_per_90,
-                float(form.minutes_pct) / 100,
-                fdr,
-                1.0 if is_home else 0.0,
-                0.5,
-                float(form.bps_avg),
-                1.0 if is_dgw else 0.0,
-                0,  # saves placeholder
-                1.0 if player.is_penalty_taker or player.is_set_piece_taker else 0,
-                season_xgi,
-            ]])
+            features = np.array(
+                [
+                    [
+                        xgi_per_90,
+                        float(form.minutes_pct) / 100,
+                        fdr,
+                        1.0 if is_home else 0.0,
+                        0.5,
+                        float(form.bps_avg),
+                        1.0 if is_dgw else 0.0,
+                        0,  # saves placeholder
+                        1.0
+                        if player.is_penalty_taker or player.is_set_piece_taker
+                        else 0,
+                        season_xgi,
+                    ]
+                ]
+            )
             features_scaled = _scaler.transform(features)
             pred = max(0, float(_model.predict(features_scaled)[0]))
             total_predicted += pred
 
-        predictions.append({
-            "player_id": player.id,
-            "web_name": player.web_name,
-            "team_short_name": team_short,
-            "position": player.position,
-            "predicted_points": round(Decimal(str(total_predicted)), 1),
-            "now_cost": player.now_cost,
-        })
+        predictions.append(
+            {
+                "player_id": player.id,
+                "web_name": player.web_name,
+                "team_short_name": team_short,
+                "position": player.position,
+                "predicted_points": round(Decimal(str(total_predicted)), 1),
+                "now_cost": player.now_cost,
+            }
+        )
 
     predictions.sort(key=lambda p: float(p["predicted_points"]), reverse=True)
     return predictions

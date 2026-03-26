@@ -1,10 +1,17 @@
 """Daily price change log."""
 
 import datetime as dt
-
 from decimal import Decimal
 
-from sqlalchemy import Date, ForeignKey, Index, Integer, Numeric, SmallInteger, UniqueConstraint
+from sqlalchemy import (
+    Date,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    SmallInteger,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base

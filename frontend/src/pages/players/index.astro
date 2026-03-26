@@ -1,0 +1,12 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PlayerTable from '../../components/PlayerTable';
+import { getPlayers } from '../../api/players';
+
+const players = await getPlayers({ sort_by: 'form_points', limit: 100 });
+---
+
+<Layout title="Players">
+  <h1 class="text-2xl font-bold text-white mb-4">Player Stats</h1>
+  <PlayerTable client:load initial={players} />
+</Layout>

@@ -23,10 +23,13 @@ async def list_gameweeks(
     return APIResponse(
         data=[
             GameweekOut(
-                id=gw.id, name=gw.name,
+                id=gw.id,
+                name=gw.name,
                 deadline_time=gw.deadline_time.isoformat(),
-                is_current=gw.is_current, is_next=gw.is_next,
-                is_finished=gw.is_finished, is_double=gw.is_double,
+                is_current=gw.is_current,
+                is_next=gw.is_next,
+                is_finished=gw.is_finished,
+                is_double=gw.is_double,
                 is_blank=gw.is_blank,
                 average_entry_score=gw.average_entry_score,
                 highest_score=gw.highest_score,
@@ -63,14 +66,19 @@ async def list_fixtures(
     return APIResponse(
         data=[
             FixtureOut(
-                id=f.id, gameweek_id=f.gameweek_id,
-                home_team_id=f.home_team_id, away_team_id=f.away_team_id,
+                id=f.id,
+                gameweek_id=f.gameweek_id,
+                home_team_id=f.home_team_id,
+                away_team_id=f.away_team_id,
                 home_short_name=team_names.get(f.home_team_id),
                 away_short_name=team_names.get(f.away_team_id),
                 kickoff_time=f.kickoff_time.isoformat() if f.kickoff_time else None,
-                started=f.started, finished=f.finished,
-                home_goals=f.home_goals, away_goals=f.away_goals,
-                home_difficulty=f.home_difficulty, away_difficulty=f.away_difficulty,
+                started=f.started,
+                finished=f.finished,
+                home_goals=f.home_goals,
+                away_goals=f.away_goals,
+                home_difficulty=f.home_difficulty,
+                away_difficulty=f.away_difficulty,
             )
             for f in fixtures
         ]

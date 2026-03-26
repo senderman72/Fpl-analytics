@@ -1,0 +1,51 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getBuyCandidates } from '../../api/decisions';
+import { POSITIONS, formatCost } from '../../lib/types';
+
+const buys = await getBuyCandidates({ limit: 30 });
+---
+
+<Layout title="Buy/Sell">
+  <h1 class="text-2xl font-bold text-white mb-4">Transfer Planner</h1>
+  <p class="text-gray-400 mb-6">Ranked by composite score: xGI/90 (40%) + Points per Million (30%) + Form (30%) - FDR penalty</p>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-gray-400 border-b border-gray-700">
+          <th class="py-2 px-2">#</th>
+          <th class="py-2 px-2">Player</th>
+          <th class="py-2 px-2">Team</th>
+          <th class="py-2 px-2">Pos</th>
+          <th class="py-2 px-2 text-right">Price</th>
+          <th class="py-2 px-2 text-right">Form</th>
+          <th class="py-2 px-2 text-right">Pts/G</th>
+          <th class="py-2 px-2 text-right">xGI/90</th>
+          <th class="py-2 px-2 text-right">PPM</th>
+          <th class="py-2 px-2 text-right">Mins %</th>
+          <th class="py-2 px-2 text-right">FDR 5</th>
+        </tr>
+      </thead>
+      <tbody>
+        {buys.map((b, i) => (
+          <tr class="border-b border-gray-800 hover:bg-fpl-card/50">
+            <td class="py-2 px-2 text-gray-500">{i + 1}</td>
+            <td class="py-2 px-2">
+              <a href={`/players/${b.player_id}`} class="text-fpl-cyan hover:underline font-medium">{b.web_name}</a>
+            </td>
+            <td class="py-2 px-2 text-gray-400">{b.team_short_name}</td>
+            <td class="py-2 px-2 text-gray-400">{POSITIONS[b.position]}</td>
+            <td class="py-2 px-2 text-right">{formatCost(b.now_cost)}</td>
+            <td class="py-2 px-2 text-right font-medium text-fpl-green">{b.form_points}</td>
+            <td class="py-2 px-2 text-right">{b.pts_per_game}</td>
+            <td class="py-2 px-2 text-right">{b.xgi_per_90}</td>
+            <td class="py-2 px-2 text-right">{b.ppm}</td>
+            <td class="py-2 px-2 text-right">{Number(b.minutes_pct).toFixed(0)}%</td>
+            <td class="py-2 px-2 text-right">{b.fdr_next_5 ?? '-'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</Layout>

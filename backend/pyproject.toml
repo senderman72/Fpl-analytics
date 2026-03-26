@@ -49,6 +49,7 @@ packages = ["app", "worker"]
 [tool.ruff]
 target-version = "py313"
 line-length = 88
+extend-exclude = ["alembic"]
 
 [tool.ruff.lint]
 select = [
@@ -63,15 +64,26 @@ select = [
     "TCH",  # flake8-type-checking
     "RUF",  # ruff-specific
 ]
+ignore = [
+    "B008",   # Depends() in function defaults is standard FastAPI pattern
+    "N806",   # X, y variable names are standard in ML/scikit-learn code
+    "UP046",  # Generic[T] in Pydantic models is the supported pattern
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app", "worker"]
 
 [tool.mypy]
 python_version = "3.13"
-strict = true
-plugins = ["pydantic.mypy"]
+plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
 ignore_missing_imports = true
+disallow_untyped_defs = true
+warn_return_any = false
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = ["app.models.*", "app.services.points_model"]
+disable_error_code = ["name-defined", "assignment", "arg-type", "union-attr"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

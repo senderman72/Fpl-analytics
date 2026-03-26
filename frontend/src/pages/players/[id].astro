@@ -1,0 +1,128 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getPlayer, getPlayerHistory, getPlayerFixtures } from '../../api/players';
+import { POSITIONS, formatCost, fdrColor } from '../../lib/types';
+
+const { id } = Astro.params;
+const playerId = Number(id);
+
+const [player, history, fixtures] = await Promise.all([
+  getPlayer(playerId),
+  getPlayerHistory(playerId),
+  getPlayerFixtures(playerId),
+]);
+
+const posLabel = POSITIONS[player.position];
+const minutesPlayed = history.reduce((sum, h) => sum + h.minutes, 0);
+const totalPoints = history.reduce((sum, h) => sum + h.total_points, 0);
+const totalGoals = history.reduce((sum, h) => sum + h.goals_scored, 0);
+const totalAssists = history.reduce((sum, h) => sum + h.assists, 0);
+---
+
+<Layout title={player.web_name}>
+  <!-- Header -->
+  <div class="mb-6">
+    <div class="flex items-baseline gap-3">
+      <h1 class="text-3xl font-bold text-white">{player.first_name} {player.second_name}</h1>
+      <span class="text-fpl-cyan text-lg">{player.team_short_name}</span>
+      <span class="text-gray-400">{posLabel}</span>
+    </div>
+    <div class="flex gap-4 mt-2 text-sm text-gray-400">
+      <span>{formatCost(player.now_cost)}</span>
+      {player.is_penalty_taker && <span class="text-fpl-green">Penalty taker</span>}
+      {player.is_set_piece_taker && <span class="text-fpl-cyan">Set piece taker</span>}
+      {player.news && <span class="text-fpl-pink">{player.news}</span>}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Season Stats -->
+    <div class="bg-fpl-card rounded-lg p-5 border border-gray-700">
+      <h3 class="text-gray-400 text-sm mb-3 font-medium">Season Stats</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <div><div class="text-gray-400 text-xs">Points</div><div class="text-xl font-bold text-white">{totalPoints}</div></div>
+        <div><div class="text-gray-400 text-xs">Minutes</div><div class="text-xl font-bold text-white">{minutesPlayed}</div></div>
+        <div><div class="text-gray-400 text-xs">Goals</div><div class="text-xl font-bold text-white">{totalGoals}</div></div>
+        <div><div class="text-gray-400 text-xs">Assists</div><div class="text-xl font-bold text-white">{totalAssists}</div></div>
+      </div>
+    </div>
+
+    <!-- Form (6 GW) -->
+    <div class="bg-fpl-card rounded-lg p-5 border border-gray-700">
+      <h3 class="text-gray-400 text-sm mb-3 font-medium">Form (Last 6 GWs)</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <div><div class="text-gray-400 text-xs">Form Pts</div><div class="text-xl font-bold text-fpl-green">{player.form_points ?? '-'}</div></div>
+        <div><div class="text-gray-400 text-xs">Pts/Game</div><div class="text-xl font-bold text-white">{player.pts_per_game ?? '-'}</div></div>
+        <div><div class="text-gray-400 text-xs">xGI/90</div><div class="text-xl font-bold text-white">{player.xgi_per_90 ?? '-'}</div></div>
+        <div><div class="text-gray-400 text-xs">Mins %</div><div class="text-xl font-bold text-white">{player.minutes_pct ? `${Number(player.minutes_pct).toFixed(0)}%` : '-'}</div></div>
+      </div>
+    </div>
+
+    <!-- Understat xG -->
+    <div class="bg-fpl-card rounded-lg p-5 border border-gray-700">
+      <h3 class="text-gray-400 text-sm mb-3 font-medium">Expected (Understat)</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <div><div class="text-gray-400 text-xs">xG</div><div class="text-xl font-bold text-white">{player.season_xg ? Number(player.season_xg).toFixed(1) : '-'}</div></div>
+        <div><div class="text-gray-400 text-xs">xA</div><div class="text-xl font-bold text-white">{player.season_xa ? Number(player.season_xa).toFixed(1) : '-'}</div></div>
+        <div><div class="text-gray-400 text-xs">xGI</div><div class="text-xl font-bold text-fpl-green">{player.season_xgi ? Number(player.season_xgi).toFixed(1) : '-'}</div></div>
+        <div><div class="text-gray-400 text-xs">npxG</div><div class="text-xl font-bold text-white">{player.season_npxg ? Number(player.season_npxg).toFixed(1) : '-'}</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upcoming Fixtures -->
+  <div class="bg-fpl-card rounded-lg border border-gray-700 mb-8">
+    <h3 class="px-5 py-3 border-b border-gray-700 font-semibold text-white">Upcoming Fixtures</h3>
+    <div class="grid grid-cols-4 md:grid-cols-8 gap-2 p-4">
+      {fixtures.map((f) => (
+        <div class="text-center">
+          <div class="text-xs text-gray-400 mb-1">GW{f.gameweek_id}</div>
+          <div
+            class="rounded px-2 py-2 text-sm font-medium"
+            style={`background-color: ${fdrColor(f.difficulty)}20; color: ${fdrColor(f.difficulty)}`}
+          >
+            {f.opponent_short_name} ({f.is_home ? 'H' : 'A'})
+          </div>
+          {f.is_double_gw && <div class="text-xs text-fpl-pink mt-0.5">DGW</div>}
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- GW History Table -->
+  <div class="bg-fpl-card rounded-lg border border-gray-700">
+    <h3 class="px-5 py-3 border-b border-gray-700 font-semibold text-white">Gameweek History</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-gray-400 border-b border-gray-700">
+            <th class="py-2 px-3">GW</th>
+            <th class="py-2 px-3 text-right">Pts</th>
+            <th class="py-2 px-3 text-right">Mins</th>
+            <th class="py-2 px-3 text-right">G</th>
+            <th class="py-2 px-3 text-right">A</th>
+            <th class="py-2 px-3 text-right">CS</th>
+            <th class="py-2 px-3 text-right">Bonus</th>
+            <th class="py-2 px-3 text-right">BPS</th>
+            <th class="py-2 px-3 text-right">ICT</th>
+          </tr>
+        </thead>
+        <tbody>
+          {history.map((h) => (
+            <tr class="border-b border-gray-800">
+              <td class="py-2 px-3 text-gray-400">GW{h.gameweek_id}</td>
+              <td class="py-2 px-3 text-right font-medium">{h.total_points}</td>
+              <td class="py-2 px-3 text-right">{h.minutes}</td>
+              <td class="py-2 px-3 text-right">{h.goals_scored || '-'}</td>
+              <td class="py-2 px-3 text-right">{h.assists || '-'}</td>
+              <td class="py-2 px-3 text-right">{h.clean_sheets || '-'}</td>
+              <td class="py-2 px-3 text-right">{h.bonus || '-'}</td>
+              <td class="py-2 px-3 text-right">{h.bps}</td>
+              <td class="py-2 px-3 text-right">{h.ict_index}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</Layout>

@@ -3,10 +3,8 @@
 import asyncio
 import logging
 
-from sqlalchemy import update
+from sqlalchemy import func, update
 from sqlalchemy.dialects.postgresql import insert
-
-from sqlalchemy import func
 
 from app.core.database import sync_session_factory
 from app.models.fixture import Fixture
@@ -114,12 +112,11 @@ def sync_player_history() -> dict[str, int]:
 
     # Get bootstrap data to filter to active players only
     data = asyncio.run(fetch_bootstrap())
-    active_ids = [
-        p["id"] for p in data["elements"] if p.get("total_points", 0) > 0
-    ]
+    active_ids = [p["id"] for p in data["elements"] if p.get("total_points", 0) > 0]
     logger.info(
         "sync_player_history: %d active players (of %d total)",
-        len(active_ids), len(data["elements"]),
+        len(active_ids),
+        len(data["elements"]),
     )
 
     total = 0
@@ -157,12 +154,15 @@ def sync_player_history() -> dict[str, int]:
         total += len(all_rows)
         logger.info(
             "sync_player_history: %d/%d players done, %d rows so far",
-            min(i + batch_size, len(active_ids)), len(active_ids), total,
+            min(i + batch_size, len(active_ids)),
+            len(active_ids),
+            total,
         )
 
     logger.info(
         "sync_player_history complete: %d rows, %d failed fetches",
-        total, failed,
+        total,
+        failed,
     )
     return {"player_gw_stats": total, "failed": failed}
 
@@ -172,10 +172,7 @@ def sync_price_snapshot() -> dict[str, int]:
     """Take a daily price snapshot from /bootstrap-static/ for all players."""
     data = asyncio.run(fetch_bootstrap())
 
-    rows = [
-        normalise_price_snapshot(p["id"], p)
-        for p in data["elements"]
-    ]
+    rows = [normalise_price_snapshot(p["id"], p) for p in data["elements"]]
 
     with sync_session_factory() as session:
         stmt = insert(PlayerPrice).values(rows)
@@ -244,16 +241,22 @@ def sync_understat(season: str = "2025") -> dict[str, int]:
     with sync_session_factory() as session:
         fpl_data = (
             session.query(
-                Player.id, Player.web_name, Player.first_name,
-                Player.second_name, Team.short_name,
+                Player.id,
+                Player.web_name,
+                Player.first_name,
+                Player.second_name,
+                Team.short_name,
             )
             .join(Team, Player.team_id == Team.id)
             .all()
         )
         fpl_players = [
             {
-                "id": pid, "web_name": wn, "first_name": fn,
-                "second_name": sn, "team_short_name": tsn,
+                "id": pid,
+                "web_name": wn,
+                "first_name": fn,
+                "second_name": sn,
+                "team_short_name": tsn,
             }
             for pid, wn, fn, sn, tsn in fpl_data
         ]
@@ -275,24 +278,26 @@ def sync_understat(season: str = "2025") -> dict[str, int]:
             stmt = insert(PlayerSeasonXG).values(rows)
             stmt = stmt.on_conflict_do_update(
                 constraint="uq_xg_player_season",
-                set_={c.name: c for c in stmt.excluded
-                      if c.name not in ("player_id", "season")},
+                set_={
+                    c.name: c
+                    for c in stmt.excluded
+                    if c.name not in ("player_id", "season")
+                },
             )
             session.execute(stmt)
 
         # Also update understat_id on the players table
         for fpl_id, us_id in fpl_to_understat.items():
             session.execute(
-                update(Player)
-                .where(Player.id == fpl_id)
-                .values(understat_id=us_id)
+                update(Player).where(Player.id == fpl_id).values(understat_id=us_id)
             )
 
         session.commit()
 
     logger.info(
         "sync_understat complete: %d xG rows, %d players matched",
-        len(rows), len(fpl_to_understat),
+        len(rows),
+        len(fpl_to_understat),
     )
     return {"player_season_xg": len(rows), "matched": len(fpl_to_understat)}
 
@@ -325,8 +330,7 @@ def recompute_form_cache() -> dict[str, int]:
 
         # Get all player IDs that have stats
         player_ids = [
-            pid for (pid,) in
-            session.query(PlayerGWStats.player_id).distinct().all()
+            pid for (pid,) in session.query(PlayerGWStats.player_id).distinct().all()
         ]
 
         # Get season xG per-90 for each player
@@ -364,43 +368,54 @@ def recompute_form_cache() -> dict[str, int]:
                 total_cs = sum(s.clean_sheets for s in stats)
 
                 pts_per_game = (
-                    Decimal(total_pts) / games_started if games_started else Decimal("0")
+                    Decimal(total_pts) / games_started
+                    if games_started
+                    else Decimal("0")
                 )
                 pts_per_90 = (
                     Decimal(total_pts) / (Decimal(total_mins) / 90)
-                    if total_mins > 0 else Decimal("0")
+                    if total_mins > 0
+                    else Decimal("0")
                 )
                 bps_avg = (
-                    Decimal(total_bps) / games_started if games_started else Decimal("0")
+                    Decimal(total_bps) / games_started
+                    if games_started
+                    else Decimal("0")
                 )
                 available_mins = len(stats) * 90
                 mins_pct = (
                     Decimal(total_mins) / Decimal(available_mins) * 100
-                    if available_mins else Decimal("0")
+                    if available_mins
+                    else Decimal("0")
                 )
 
-                all_rows.append({
-                    "player_id": pid,
-                    "gw_window": window,
-                    "total_points": total_pts,
-                    "pts_per_game": round(pts_per_game, 2),
-                    "pts_per_90": round(pts_per_90, 2),
-                    "xgi_per_90": round(season_xg.get(pid, Decimal("0")), 2),
-                    "goals": total_goals,
-                    "assists": total_assists,
-                    "bonus": total_bonus,
-                    "bps_avg": round(bps_avg, 1),
-                    "minutes_pct": round(mins_pct, 2),
-                    "clean_sheets": total_cs,
-                })
+                all_rows.append(
+                    {
+                        "player_id": pid,
+                        "gw_window": window,
+                        "total_points": total_pts,
+                        "pts_per_game": round(pts_per_game, 2),
+                        "pts_per_90": round(pts_per_90, 2),
+                        "xgi_per_90": round(season_xg.get(pid, Decimal("0")), 2),
+                        "goals": total_goals,
+                        "assists": total_assists,
+                        "bonus": total_bonus,
+                        "bps_avg": round(bps_avg, 1),
+                        "minutes_pct": round(mins_pct, 2),
+                        "clean_sheets": total_cs,
+                    }
+                )
 
         # Bulk upsert
         if all_rows:
             stmt = insert(PlayerFormCache).values(all_rows)
             stmt = stmt.on_conflict_do_update(
                 index_elements=["player_id", "gw_window"],
-                set_={c.name: c for c in stmt.excluded
-                      if c.name not in ("player_id", "gw_window")},
+                set_={
+                    c.name: c
+                    for c in stmt.excluded
+                    if c.name not in ("player_id", "gw_window")
+                },
             )
             session.execute(stmt)
             session.commit()

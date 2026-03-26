@@ -1,4 +1,4 @@
-"""Gameweek model — GW 1–38."""
+"""Gameweek model - GW 1-38."""
 
 from datetime import datetime
 

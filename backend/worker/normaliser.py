@@ -26,7 +26,7 @@ def normalise_team(raw: dict[str, Any]) -> dict[str, Any]:
         "strength_attack_away": raw["strength_attack_away"],
         "strength_defence_home": raw["strength_defence_home"],
         "strength_defence_away": raw["strength_defence_away"],
-        "updated_at": dt.datetime.now(dt.timezone.utc),
+        "updated_at": dt.datetime.now(dt.UTC),
     }
 
 
@@ -45,7 +45,7 @@ def normalise_player(raw: dict[str, Any]) -> dict[str, Any]:
         "news": raw.get("news") or None,
         "is_penalty_taker": _is_penalty_taker(raw),
         "is_set_piece_taker": _is_set_piece_taker(raw),
-        "updated_at": dt.datetime.now(dt.timezone.utc),
+        "updated_at": dt.datetime.now(dt.UTC),
     }
 
 
@@ -134,9 +134,7 @@ def normalise_player_gw(raw: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def normalise_price_snapshot(
-    player_id: int, raw: dict[str, Any]
-) -> dict[str, Any]:
+def normalise_price_snapshot(player_id: int, raw: dict[str, Any]) -> dict[str, Any]:
     """Map bootstrap player data to a daily player_prices row."""
     return {
         "player_id": player_id,
@@ -184,11 +182,11 @@ def match_understat_to_fpl(
     """Match Understat players to FPL player IDs using fuzzy name matching.
 
     Args:
-        understat_players: List of dicts from Understat API (id, player_name, team_title)
-        fpl_players: List of dicts with keys (id, web_name, first_name, second_name, team_short_name)
+        understat_players: Understat API dicts (id, player_name, team_title)
+        fpl_players: FPL dicts (id, web_name, first/second_name, team_short_name)
 
     Returns:
-        Dict mapping FPL player_id → Understat player_id
+        Dict mapping FPL player_id to Understat player_id
     """
     # Group FPL players by team short name for faster matching
     fpl_by_team: dict[str, list[dict]] = {}
@@ -224,7 +222,7 @@ def match_understat_to_fpl(
             continue
 
         # Try matching against web_name, full name, and last name
-        best_score = 0
+        best_score: float = 0
         best_fpl = None
         us_last = us_name.split()[-1]
         for fpl_p in candidates:
@@ -251,11 +249,13 @@ def match_understat_to_fpl(
     if unmatched:
         logger.warning(
             "Understat: %d unmatched players:\n  %s",
-            len(unmatched), "\n  ".join(unmatched[:20]),
+            len(unmatched),
+            "\n  ".join(unmatched[:20]),
         )
     logger.info(
         "Understat matching: %d matched, %d unmatched",
-        len(matched), len(unmatched),
+        len(matched),
+        len(unmatched),
     )
     return matched
 
@@ -280,5 +280,5 @@ def normalise_understat_season(
         "key_passes": int(raw["key_passes"]),
         "xg_chain": Decimal(raw["xGChain"]),
         "xg_buildup": Decimal(raw["xGBuildup"]),
-        "updated_at": dt.datetime.now(dt.timezone.utc),
+        "updated_at": dt.datetime.now(dt.UTC),
     }

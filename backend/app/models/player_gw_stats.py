@@ -2,7 +2,14 @@
 
 from decimal import Decimal
 
-from sqlalchemy import ForeignKey, Index, Integer, Numeric, SmallInteger, UniqueConstraint
+from sqlalchemy import (
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    SmallInteger,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -11,7 +18,9 @@ from app.core.database import Base
 class PlayerGWStats(Base):
     __tablename__ = "player_gw_stats"
     __table_args__ = (
-        UniqueConstraint("player_id", "gameweek_id", "fixture_id", name="uq_pgw_player_gw_fixture"),
+        UniqueConstraint(
+            "player_id", "gameweek_id", "fixture_id", name="uq_pgw_player_gw_fixture"
+        ),
         Index("idx_pgw_player_gw", "player_id", "gameweek_id"),
         Index("idx_pgw_gw", "gameweek_id"),
     )

@@ -38,8 +38,6 @@ async def fetch_live_gw(gw: int) -> dict[str, Any]:
 async def fetch_player_summary(player_id: int) -> dict[str, Any]:
     """Fetch /element-summary/{id}/ — per-player GW history + fixtures."""
     async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            f"{BASE_URL}/element-summary/{player_id}/", timeout=30
-        )
+        resp = await client.get(f"{BASE_URL}/element-summary/{player_id}/", timeout=30)
         resp.raise_for_status()
         return resp.json()

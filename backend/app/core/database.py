@@ -41,7 +41,7 @@ class Base(DeclarativeBase):
     """Base class for all ORM models."""
 
 
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_session() -> AsyncGenerator[AsyncSession]:
     """FastAPI dependency that yields an async database session."""
     async with async_session_factory() as session:
         yield session

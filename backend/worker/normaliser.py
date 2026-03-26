@@ -5,8 +5,13 @@ SQLAlchemy upserts on the corresponding tables.
 """
 
 import datetime as dt
+import logging
 from decimal import Decimal
 from typing import Any
+
+from rapidfuzz import fuzz
+
+logger = logging.getLogger(__name__)
 
 
 def normalise_team(raw: dict[str, Any]) -> dict[str, Any]:
@@ -140,4 +145,140 @@ def normalise_price_snapshot(
         "transfers_in_event": raw.get("transfers_in_event", 0),
         "transfers_out_event": raw.get("transfers_out_event", 0),
         "selected_by_percent": Decimal(str(raw.get("selected_by_percent", "0"))),
+    }
+
+
+# --- Understat matching and normalisation ---
+
+# Map Understat team names to FPL short names
+UNDERSTAT_TEAM_MAP: dict[str, str] = {
+    "Arsenal": "ARS",
+    "Aston Villa": "AVL",
+    "Bournemouth": "BOU",
+    "Brentford": "BRE",
+    "Brighton": "BHA",
+    "Burnley": "BUR",
+    "Chelsea": "CHE",
+    "Crystal Palace": "CRY",
+    "Everton": "EVE",
+    "Fulham": "FUL",
+    "Ipswich": "IPS",
+    "Leicester": "LEI",
+    "Liverpool": "LIV",
+    "Manchester City": "MCI",
+    "Manchester United": "MUN",
+    "Newcastle United": "NEW",
+    "Nottingham Forest": "NFO",
+    "Southampton": "SOU",
+    "Tottenham": "TOT",
+    "West Ham": "WHU",
+    "Wolverhampton Wanderers": "WOL",
+    "Wolves": "WOL",
+}
+
+
+def match_understat_to_fpl(
+    understat_players: list[dict[str, Any]],
+    fpl_players: list[dict[str, Any]],
+) -> dict[int, int]:
+    """Match Understat players to FPL player IDs using fuzzy name matching.
+
+    Args:
+        understat_players: List of dicts from Understat API (id, player_name, team_title)
+        fpl_players: List of dicts with keys (id, web_name, first_name, second_name, team_short_name)
+
+    Returns:
+        Dict mapping FPL player_id → Understat player_id
+    """
+    # Group FPL players by team short name for faster matching
+    fpl_by_team: dict[str, list[dict]] = {}
+    for p in fpl_players:
+        fpl_by_team.setdefault(p["team_short_name"], []).append(p)
+
+    matched: dict[int, int] = {}
+    unmatched: list[str] = []
+
+    for us_player in understat_players:
+        us_name = us_player["player_name"]
+        us_team = us_player["team_title"]
+        us_id = int(us_player["id"])
+
+        # Understat may list multiple teams (e.g. "Arsenal,Crystal Palace")
+        # Try each team until we find a match
+        team_names = [t.strip() for t in us_team.split(",")]
+        fpl_team_codes = [
+            UNDERSTAT_TEAM_MAP[t] for t in team_names if t in UNDERSTAT_TEAM_MAP
+        ]
+
+        if not fpl_team_codes:
+            unmatched.append(f"{us_name} ({us_team}) - unknown team")
+            continue
+
+        # Gather candidates from all possible teams
+        candidates = []
+        for code in fpl_team_codes:
+            candidates.extend(fpl_by_team.get(code, []))
+
+        if not candidates:
+            unmatched.append(f"{us_name} ({us_team}) - no FPL players")
+            continue
+
+        # Try matching against web_name, full name, and last name
+        best_score = 0
+        best_fpl = None
+        us_last = us_name.split()[-1]
+        for fpl_p in candidates:
+            # Score against web_name (e.g. "Salah" vs "M.Salah")
+            score_web = fuzz.ratio(us_last, fpl_p["web_name"])
+            # Score against full name
+            full_name = f"{fpl_p['first_name']} {fpl_p['second_name']}"
+            score_full = fuzz.ratio(us_name, full_name)
+            # Partial ratio catches "Bruno Guimarães" vs "Bruno G."
+            score_partial = fuzz.partial_ratio(us_name, full_name)
+            score = max(score_web, score_full, score_partial)
+            if score > best_score:
+                best_score = score
+                best_fpl = fpl_p
+
+        if best_fpl and best_score > 65:
+            matched[best_fpl["id"]] = us_id
+        else:
+            unmatched.append(
+                f"{us_name} ({us_team}) - best match: "
+                f"{best_fpl['web_name'] if best_fpl else '?'} ({best_score})"
+            )
+
+    if unmatched:
+        logger.warning(
+            "Understat: %d unmatched players:\n  %s",
+            len(unmatched), "\n  ".join(unmatched[:20]),
+        )
+    logger.info(
+        "Understat matching: %d matched, %d unmatched",
+        len(matched), len(unmatched),
+    )
+    return matched
+
+
+def normalise_understat_season(
+    raw: dict[str, Any], fpl_player_id: int, season: str
+) -> dict[str, Any]:
+    """Map Understat season stats to player_season_xg row."""
+    xg = Decimal(raw["xG"])
+    xa = Decimal(raw["xA"])
+    return {
+        "player_id": fpl_player_id,
+        "season": season,
+        "understat_id": int(raw["id"]),
+        "games": int(raw["games"]),
+        "minutes": int(raw["time"]),
+        "xg": xg,
+        "xa": xa,
+        "xgi": xg + xa,
+        "npxg": Decimal(raw["npxG"]),
+        "shots": int(raw["shots"]),
+        "key_passes": int(raw["key_passes"]),
+        "xg_chain": Decimal(raw["xGChain"]),
+        "xg_buildup": Decimal(raw["xGBuildup"]),
+        "updated_at": dt.datetime.now(dt.timezone.utc),
     }

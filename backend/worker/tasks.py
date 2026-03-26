@@ -6,11 +6,15 @@ import logging
 from sqlalchemy import update
 from sqlalchemy.dialects.postgresql import insert
 
+from sqlalchemy import func
+
 from app.core.database import sync_session_factory
 from app.models.fixture import Fixture
 from app.models.gameweek import Gameweek
 from app.models.player import Player
+from app.models.player_form_cache import PlayerFormCache
 from app.models.player_gw_stats import PlayerGWStats
+from app.models.player_gw_xg import PlayerSeasonXG
 from app.models.player_prices import PlayerPrice
 from app.models.team import Team
 from app.services.fpl_client import (
@@ -18,14 +22,17 @@ from app.services.fpl_client import (
     fetch_fixtures,
     fetch_player_summary,
 )
+from app.services.understat_client import fetch_league_players
 from worker.celery_app import celery_app
 from worker.normaliser import (
+    match_understat_to_fpl,
     normalise_fixture,
     normalise_gameweek,
     normalise_player,
     normalise_player_gw,
     normalise_price_snapshot,
     normalise_team,
+    normalise_understat_season,
 )
 
 logger = logging.getLogger(__name__)
@@ -222,3 +229,181 @@ def _detect_dgw_bgw() -> None:
 
         session.commit()
         logger.info("DGW/BGW detection complete for %d gameweeks", len(all_gw_ids))
+
+
+@celery_app.task(name="worker.tasks.sync_understat")
+def sync_understat(season: str = "2025") -> dict[str, int]:
+    """Fetch Understat season xG stats and match to FPL players.
+
+    Uses fuzzy name matching to link Understat → FPL player IDs,
+    then stores season-level xG data and updates understat_id on players.
+    """
+    understat_players = asyncio.run(fetch_league_players(season=season))
+
+    # Build FPL player lookup with team short names
+    with sync_session_factory() as session:
+        fpl_data = (
+            session.query(
+                Player.id, Player.web_name, Player.first_name,
+                Player.second_name, Team.short_name,
+            )
+            .join(Team, Player.team_id == Team.id)
+            .all()
+        )
+        fpl_players = [
+            {
+                "id": pid, "web_name": wn, "first_name": fn,
+                "second_name": sn, "team_short_name": tsn,
+            }
+            for pid, wn, fn, sn, tsn in fpl_data
+        ]
+
+    # Match Understat → FPL
+    fpl_to_understat = match_understat_to_fpl(understat_players, fpl_players)
+
+    # Build a lookup: understat_id → raw data
+    us_by_id = {int(p["id"]): p for p in understat_players}
+
+    # Normalise and upsert
+    rows = []
+    for fpl_id, us_id in fpl_to_understat.items():
+        raw = us_by_id[us_id]
+        rows.append(normalise_understat_season(raw, fpl_id, season))
+
+    with sync_session_factory() as session:
+        if rows:
+            stmt = insert(PlayerSeasonXG).values(rows)
+            stmt = stmt.on_conflict_do_update(
+                constraint="uq_xg_player_season",
+                set_={c.name: c for c in stmt.excluded
+                      if c.name not in ("player_id", "season")},
+            )
+            session.execute(stmt)
+
+        # Also update understat_id on the players table
+        for fpl_id, us_id in fpl_to_understat.items():
+            session.execute(
+                update(Player)
+                .where(Player.id == fpl_id)
+                .values(understat_id=us_id)
+            )
+
+        session.commit()
+
+    logger.info(
+        "sync_understat complete: %d xG rows, %d players matched",
+        len(rows), len(fpl_to_understat),
+    )
+    return {"player_season_xg": len(rows), "matched": len(fpl_to_understat)}
+
+
+@celery_app.task(name="worker.tasks.recompute_form_cache")
+def recompute_form_cache() -> dict[str, int]:
+    """Recompute rolling form windows (4, 6, 10 GWs) for all players.
+
+    Reads from player_gw_stats and player_season_xg, writes to player_form_cache.
+    """
+    from decimal import Decimal
+
+    with sync_session_factory() as session:
+        # Get current GW
+        current_gw = (
+            session.query(Gameweek.id)
+            .filter(Gameweek.is_current == True)  # noqa: E712
+            .scalar()
+        )
+        if current_gw is None:
+            # Fallback to latest finished GW
+            current_gw = (
+                session.query(func.max(Gameweek.id))
+                .filter(Gameweek.is_finished == True)  # noqa: E712
+                .scalar()
+            )
+        if current_gw is None:
+            logger.warning("No finished gameweeks found, skipping form cache")
+            return {"form_rows": 0}
+
+        # Get all player IDs that have stats
+        player_ids = [
+            pid for (pid,) in
+            session.query(PlayerGWStats.player_id).distinct().all()
+        ]
+
+        # Get season xG per-90 for each player
+        season_xg: dict[int, Decimal] = {}
+        for row in session.query(PlayerSeasonXG).all():
+            if row.minutes and row.minutes > 0:
+                season_xg[row.player_id] = row.xgi / (Decimal(row.minutes) / 90)
+            else:
+                season_xg[row.player_id] = Decimal("0")
+
+        all_rows = []
+        for window in (4, 6, 10):
+            gw_start = max(1, current_gw - window + 1)
+
+            for pid in player_ids:
+                stats = (
+                    session.query(PlayerGWStats)
+                    .filter(
+                        PlayerGWStats.player_id == pid,
+                        PlayerGWStats.gameweek_id >= gw_start,
+                        PlayerGWStats.gameweek_id <= current_gw,
+                    )
+                    .all()
+                )
+                if not stats:
+                    continue
+
+                total_pts = sum(s.total_points for s in stats)
+                total_mins = sum(s.minutes for s in stats)
+                games_started = sum(1 for s in stats if s.minutes > 0)
+                total_goals = sum(s.goals_scored for s in stats)
+                total_assists = sum(s.assists for s in stats)
+                total_bonus = sum(s.bonus for s in stats)
+                total_bps = sum(s.bps for s in stats)
+                total_cs = sum(s.clean_sheets for s in stats)
+
+                pts_per_game = (
+                    Decimal(total_pts) / games_started if games_started else Decimal("0")
+                )
+                pts_per_90 = (
+                    Decimal(total_pts) / (Decimal(total_mins) / 90)
+                    if total_mins > 0 else Decimal("0")
+                )
+                bps_avg = (
+                    Decimal(total_bps) / games_started if games_started else Decimal("0")
+                )
+                available_mins = len(stats) * 90
+                mins_pct = (
+                    Decimal(total_mins) / Decimal(available_mins) * 100
+                    if available_mins else Decimal("0")
+                )
+
+                all_rows.append({
+                    "player_id": pid,
+                    "gw_window": window,
+                    "total_points": total_pts,
+                    "pts_per_game": round(pts_per_game, 2),
+                    "pts_per_90": round(pts_per_90, 2),
+                    "xgi_per_90": round(season_xg.get(pid, Decimal("0")), 2),
+                    "goals": total_goals,
+                    "assists": total_assists,
+                    "bonus": total_bonus,
+                    "bps_avg": round(bps_avg, 1),
+                    "minutes_pct": round(mins_pct, 2),
+                    "clean_sheets": total_cs,
+                })
+
+        # Bulk upsert
+        if all_rows:
+            stmt = insert(PlayerFormCache).values(all_rows)
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["player_id", "gw_window"],
+                set_={c.name: c for c in stmt.excluded
+                      if c.name not in ("player_id", "gw_window")},
+            )
+            session.execute(stmt)
+            session.commit()
+
+    logger.info("recompute_form_cache complete: %d rows", len(all_rows))
+    return {"form_rows": len(all_rows)}

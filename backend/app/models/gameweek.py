@@ -24,4 +24,3 @@ class Gameweek(Base):
 
     fixtures: Mapped[list["Fixture"]] = relationship(back_populates="gameweek")  # noqa: F821
     gw_stats: Mapped[list["PlayerGWStats"]] = relationship(back_populates="gameweek")  # noqa: F821
-    gw_xg: Mapped[list["PlayerGWXG"]] = relationship(back_populates="gameweek")  # noqa: F821

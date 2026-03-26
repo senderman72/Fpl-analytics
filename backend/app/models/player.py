@@ -28,6 +28,6 @@ class Player(Base):
 
     team: Mapped["Team"] = relationship(back_populates="players")  # noqa: F821
     gw_stats: Mapped[list["PlayerGWStats"]] = relationship(back_populates="player")  # noqa: F821
-    gw_xg: Mapped[list["PlayerGWXG"]] = relationship(back_populates="player")  # noqa: F821
+    season_xg: Mapped[list["PlayerSeasonXG"]] = relationship(back_populates="player")  # noqa: F821
     prices: Mapped[list["PlayerPrice"]] = relationship(back_populates="player")  # noqa: F821
     form_cache: Mapped[list["PlayerFormCache"]] = relationship(back_populates="player")  # noqa: F821

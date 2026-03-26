@@ -1,0 +1,25 @@
+---
+interface Props {
+  rank: number;
+  accent?: string;
+}
+const { rank, accent = 'border-fpl-green' } = Astro.props;
+
+const rankColors: Record<number, string> = {
+  1: 'text-fpl-gold',
+  2: 'text-gray-300',
+  3: 'text-amber-600',
+};
+---
+
+<div class:list={[
+  'card p-5 relative overflow-hidden',
+  `border-l-3 ${accent}`,
+  rank === 1 && 'ring-1 ring-fpl-green/20',
+]}>
+  <span class:list={[
+    'absolute top-3 right-4 text-3xl font-extrabold opacity-15',
+    rankColors[rank] || 'text-gray-500',
+  ]}>#{rank}</span>
+  <slot />
+</div>

@@ -1,86 +1,163 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import DeadlineCountdown from '../components/DeadlineCountdown';
+import HeroCard from '../components/HeroCard.astro';
+import PositionBadge from '../components/PositionBadge.astro';
+import StatCard from '../components/StatCard.astro';
 import { getGameweeks } from '../api/gameweeks';
-import { getCaptainPicks } from '../api/decisions';
+import { getCaptainPicks, getDifferentials } from '../api/decisions';
 import { getPlayers } from '../api/players';
 import { POSITIONS, formatCost } from '../lib/types';
 
 const gameweeks = await getGameweeks();
 const currentGW = gameweeks.find(gw => gw.is_current);
 const nextGW = gameweeks.find(gw => gw.is_next);
+const finishedCount = gameweeks.filter(gw => gw.is_finished).length;
 const captains = await getCaptainPicks(5);
 const topForm = await getPlayers({ sort_by: 'form_points', limit: 5 });
+const differentials = await getDifferentials({ limit: 5 });
+
+const quickLinks = [
+  { href: '/decisions/buy-sell', label: 'Transfers', desc: 'Find your next move', color: 'border-fpl-green' },
+  { href: '/decisions/captain', label: 'Captain', desc: 'Pick your armband', color: 'border-fpl-cyan' },
+  { href: '/decisions/chips', label: 'Chips', desc: 'Time your chips right', color: 'border-fpl-pink' },
+  { href: '/predictions', label: 'Predictions', desc: 'Model-predicted points', color: 'border-fpl-gold' },
+];
 ---
 
 <Layout title="Dashboard">
-  <!-- GW Status -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-    <div class="bg-fpl-card rounded-lg p-5 border border-gray-700">
-      <div class="text-gray-400 text-sm mb-1">Current Gameweek</div>
-      <div class="text-2xl font-bold text-white">{currentGW?.name ?? 'N/A'}</div>
-      {currentGW?.average_entry_score && (
-        <div class="text-sm text-gray-400 mt-1">Avg score: {currentGW.average_entry_score}</div>
+  <!-- Hero: Deadline + GW Status -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+    <div class="lg:col-span-2 card p-6">
+      <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5">
+        <div>
+          <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Next Deadline</div>
+          <div class="text-white font-semibold text-lg">{nextGW?.name ?? 'Season Complete'}</div>
+          {nextGW && (
+            <div class="text-gray-400 text-sm mt-0.5">
+              {new Date(nextGW.deadline_time).toLocaleDateString('en-GB', {
+                weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+                timeZone: 'Europe/London',
+              })} GMT
+            </div>
+          )}
+        </div>
+        {currentGW && (
+          <div class="text-right">
+            <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Current</div>
+            <div class="text-white font-bold">{currentGW.name}</div>
+            {currentGW.average_entry_score && (
+              <div class="text-gray-400 text-sm">Avg: {currentGW.average_entry_score} pts</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {nextGW && (
+        <DeadlineCountdown client:load deadline={nextGW.deadline_time} />
       )}
-    </div>
-    <div class="bg-fpl-card rounded-lg p-5 border border-gray-700">
-      <div class="text-gray-400 text-sm mb-1">Next Deadline</div>
-      <div class="text-2xl font-bold text-fpl-green">
-        {nextGW ? new Date(nextGW.deadline_time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+
+      <!-- Season progress -->
+      <div class="mt-5 pt-4 border-t border-gray-700/50">
+        <div class="flex justify-between text-xs text-gray-400 mb-1.5">
+          <span>Season Progress</span>
+          <span>{finishedCount}/38 gameweeks</span>
+        </div>
+        <div class="w-full bg-gray-700/50 rounded-full h-1.5">
+          <div class="bg-fpl-green h-1.5 rounded-full transition-all" style={`width: ${(finishedCount / 38) * 100}%`}></div>
+        </div>
       </div>
-      <div class="text-sm text-gray-400 mt-1">{nextGW?.name}</div>
     </div>
-    <div class="bg-fpl-card rounded-lg p-5 border border-gray-700">
-      <div class="text-gray-400 text-sm mb-1">Season Progress</div>
-      <div class="text-2xl font-bold text-white">{gameweeks.filter(gw => gw.is_finished).length}/38</div>
-      <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
-        <div class="bg-fpl-green h-2 rounded-full" style={`width: ${(gameweeks.filter(gw => gw.is_finished).length / 38) * 100}%`}></div>
-      </div>
+
+    <!-- Quick Actions -->
+    <div class="flex flex-col gap-2">
+      {quickLinks.map(({ href, label, desc, color }) => (
+        <a href={href} class:list={['card-hover p-4 border-l-3 flex items-center gap-3 group', color]}>
+          <div class="flex-1">
+            <div class="text-white font-semibold group-hover:text-fpl-green transition-colors">{label}</div>
+            <div class="text-xs text-gray-400">{desc}</div>
+          </div>
+          <svg class="w-4 h-4 text-gray-500 group-hover:text-fpl-green transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+      ))}
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Top Captain Picks -->
-    <div class="bg-fpl-card rounded-lg border border-gray-700">
-      <div class="px-5 py-3 border-b border-gray-700 flex justify-between items-center">
-        <h2 class="font-semibold text-white">Top Captain Picks</h2>
-        <a href="/decisions/captain" class="text-fpl-cyan text-sm hover:underline">View all</a>
+  <!-- Three columns: Captain Picks, Hot Form, Differentials -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Captain Picks -->
+    <div class="card overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-700/60 flex justify-between items-center">
+        <h2 class="section-title">Captain Picks</h2>
+        <a href="/decisions/captain" class="link-cyan text-xs">View all</a>
       </div>
-      <div class="divide-y divide-gray-800">
+      <div class="divide-y divide-gray-800/60">
         {captains.map((c, i) => (
-          <div class="px-5 py-3 flex items-center gap-3">
-            <span class="text-lg font-bold text-gray-500 w-6">{i + 1}</span>
-            <div class="flex-1">
-              <a href={`/players/${c.player_id}`} class="text-white font-medium hover:text-fpl-cyan">{c.web_name}</a>
-              <span class="text-gray-400 text-sm ml-2">{c.team_short_name} · {POSITIONS[c.position]}</span>
+          <a href={`/players/${c.player_id}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
+            <span class:list={[
+              'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold',
+              i === 0 ? 'bg-fpl-gold/15 text-fpl-gold' : 'bg-gray-700/50 text-gray-400',
+            ]}>{i + 1}</span>
+            <div class="flex-1 min-w-0">
+              <div class="text-white font-medium truncate">{c.web_name}</div>
+              <div class="text-xs text-gray-400">{c.team_short_name} <PositionBadge position={c.position} /></div>
             </div>
-            <div class="text-right">
-              <div class="text-fpl-green font-medium">Ceiling: {c.ceiling_score}</div>
-              <div class="text-gray-400 text-xs">Form: {c.form_points} pts</div>
+            <div class="text-right shrink-0">
+              <div class="text-fpl-green font-bold">{c.ceiling_score}</div>
+              <div class="text-[10px] text-gray-500">ceiling</div>
             </div>
-          </div>
+          </a>
         ))}
       </div>
     </div>
 
-    <!-- Top Form Players -->
-    <div class="bg-fpl-card rounded-lg border border-gray-700">
-      <div class="px-5 py-3 border-b border-gray-700 flex justify-between items-center">
-        <h2 class="font-semibold text-white">Hot Form (Last 6 GWs)</h2>
-        <a href="/players" class="text-fpl-cyan text-sm hover:underline">View all</a>
+    <!-- Hot Form -->
+    <div class="card overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-700/60 flex justify-between items-center">
+        <h2 class="section-title">Hot Form</h2>
+        <a href="/players?sort_by=form_points" class="link-cyan text-xs">View all</a>
       </div>
-      <div class="divide-y divide-gray-800">
+      <div class="divide-y divide-gray-800/60">
         {topForm.map((p, i) => (
-          <div class="px-5 py-3 flex items-center gap-3">
-            <span class="text-lg font-bold text-gray-500 w-6">{i + 1}</span>
-            <div class="flex-1">
-              <a href={`/players/${p.id}`} class="text-white font-medium hover:text-fpl-cyan">{p.web_name}</a>
-              <span class="text-gray-400 text-sm ml-2">{p.team_short_name} · {formatCost(p.now_cost)}</span>
+          <a href={`/players/${p.id}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
+            <span class:list={[
+              'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold',
+              i === 0 ? 'bg-fpl-green/15 text-fpl-green' : 'bg-gray-700/50 text-gray-400',
+            ]}>{i + 1}</span>
+            <div class="flex-1 min-w-0">
+              <div class="text-white font-medium truncate">{p.web_name}</div>
+              <div class="text-xs text-gray-400">{p.team_short_name} {formatCost(p.now_cost)}</div>
             </div>
-            <div class="text-right">
-              <div class="text-fpl-green font-medium">{p.form_points} pts</div>
-              <div class="text-gray-400 text-xs">{p.pts_per_game} pts/g</div>
+            <div class="text-right shrink-0">
+              <div class="text-fpl-green font-bold">{p.form_points}</div>
+              <div class="text-[10px] text-gray-500">{p.pts_per_game} pts/g</div>
             </div>
-          </div>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Differentials -->
+    <div class="card overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-700/60 flex justify-between items-center">
+        <h2 class="section-title">Differentials</h2>
+        <span class="text-xs text-gray-500">&lt;5% owned</span>
+      </div>
+      <div class="divide-y divide-gray-800/60">
+        {differentials.map((d, i) => (
+          <a href={`/players/${d.player_id}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-fpl-pink/15 text-fpl-pink">{i + 1}</span>
+            <div class="flex-1 min-w-0">
+              <div class="text-white font-medium truncate">{d.web_name}</div>
+              <div class="text-xs text-gray-400">{d.team_short_name} {formatCost(d.now_cost)} · {d.selected_by_percent}%</div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-fpl-cyan font-bold">{d.xgi_per_90}</div>
+              <div class="text-[10px] text-gray-500">xGI/90</div>
+            </div>
+          </a>
         ))}
       </div>
     </div>

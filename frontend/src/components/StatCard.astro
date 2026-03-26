@@ -1,0 +1,15 @@
+---
+interface Props {
+  label: string;
+  value: string | number;
+  subtext?: string;
+  accent?: string;
+}
+const { label, value, subtext, accent = 'text-white' } = Astro.props;
+---
+
+<div class="flex flex-col gap-1">
+  <span class="stat-label">{label}</span>
+  <span class:list={['stat-value', accent]}>{value}</span>
+  {subtext && <span class="text-xs text-gray-400">{subtext}</span>}
+</div>

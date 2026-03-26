@@ -1,51 +1,91 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import HeroCard from '../../components/HeroCard.astro';
+import PositionBadge from '../../components/PositionBadge.astro';
 import { getCaptainPicks } from '../../api/decisions';
+import { getGameweeks } from '../../api/gameweeks';
 import { POSITIONS, formatCost } from '../../lib/types';
 
 const picks = await getCaptainPicks(15);
+const gameweeks = await getGameweeks();
+const nextGW = gameweeks.find(gw => gw.is_next);
+const top3 = picks.slice(0, 3);
+const rest = picks.slice(3);
 ---
 
 <Layout title="Captain Picker">
-  <h1 class="text-2xl font-bold text-white mb-4">Captain Picks</h1>
-  <p class="text-gray-400 mb-6">Ranked by ceiling (40%) + form (30%) + BPS average (20%) + home/DGW bonus</p>
-
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="text-left text-gray-400 border-b border-gray-700">
-          <th class="py-2 px-2">#</th>
-          <th class="py-2 px-2">Player</th>
-          <th class="py-2 px-2">Team</th>
-          <th class="py-2 px-2">Pos</th>
-          <th class="py-2 px-2 text-right">Ceiling</th>
-          <th class="py-2 px-2 text-right">Form</th>
-          <th class="py-2 px-2 text-right">BPS Avg</th>
-          <th class="py-2 px-2 text-center">Home</th>
-          <th class="py-2 px-2 text-center">DGW</th>
-          <th class="py-2 px-2 text-center">Pens</th>
-          <th class="py-2 px-2 text-center">Set P</th>
-        </tr>
-      </thead>
-      <tbody>
-        {picks.map((c, i) => (
-          <tr class="border-b border-gray-800 hover:bg-fpl-card/50">
-            <td class="py-2 px-2 text-gray-500">{i + 1}</td>
-            <td class="py-2 px-2">
-              <a href={`/players/${c.player_id}`} class="text-fpl-cyan hover:underline font-medium">{c.web_name}</a>
-            </td>
-            <td class="py-2 px-2 text-gray-400">{c.team_short_name}</td>
-            <td class="py-2 px-2 text-gray-400">{POSITIONS[c.position]}</td>
-            <td class="py-2 px-2 text-right font-bold text-fpl-green">{c.ceiling_score}</td>
-            <td class="py-2 px-2 text-right">{c.form_points}</td>
-            <td class="py-2 px-2 text-right">{c.bps_avg}</td>
-            <td class="py-2 px-2 text-center">{c.is_home === true ? 'H' : c.is_home === false ? 'A' : '-'}</td>
-            <td class="py-2 px-2 text-center">{c.is_double_gw ? <span class="text-fpl-pink font-bold">DGW</span> : '-'}</td>
-            <td class="py-2 px-2 text-center">{c.is_penalty_taker ? <span class="text-fpl-green">Y</span> : '-'}</td>
-            <td class="py-2 px-2 text-center">{c.is_set_piece_taker ? <span class="text-fpl-cyan">Y</span> : '-'}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+  <div class="flex items-baseline justify-between mb-6">
+    <h1 class="page-title">Captain Picks</h1>
+    {nextGW && <span class="text-gray-400 text-sm">{nextGW.name}</span>}
   </div>
+
+  <!-- Top 3 Hero Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    {top3.map((c, i) => (
+      <HeroCard rank={i + 1} accent={i === 0 ? 'border-fpl-gold' : i === 1 ? 'border-gray-400' : 'border-amber-700'}>
+        <a href={`/players/${c.player_id}`} class="block">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-white font-bold text-lg">{c.web_name}</span>
+            <PositionBadge position={c.position} />
+          </div>
+          <div class="text-xs text-gray-400 mb-3">{c.team_short_name} · {formatCost(c.now_cost)}</div>
+          <div class="flex gap-4">
+            <div><div class="stat-label">Ceiling</div><div class="text-xl font-extrabold text-fpl-green">{c.ceiling_score}</div></div>
+            <div><div class="stat-label">Form</div><div class="text-xl font-extrabold text-white">{c.form_points}</div></div>
+            <div><div class="stat-label">BPS Avg</div><div class="text-xl font-extrabold text-white">{c.bps_avg}</div></div>
+          </div>
+          <div class="flex gap-2 mt-3">
+            {c.is_home === true && <span class="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">HOME</span>}
+            {c.is_home === false && <span class="text-[10px] font-bold text-gray-400 bg-gray-400/10 px-2 py-0.5 rounded-full">AWAY</span>}
+            {c.is_double_gw && <span class="text-[10px] font-bold text-fpl-pink bg-fpl-pink/10 px-2 py-0.5 rounded-full">DGW</span>}
+            {c.is_penalty_taker && <span class="text-[10px] font-bold text-fpl-green bg-fpl-green/10 px-2 py-0.5 rounded-full">PEN</span>}
+            {c.is_set_piece_taker && <span class="text-[10px] font-bold text-fpl-cyan bg-fpl-cyan/10 px-2 py-0.5 rounded-full">SET PIECE</span>}
+          </div>
+        </a>
+      </HeroCard>
+    ))}
+  </div>
+
+  <!-- Rest in table -->
+  {rest.length > 0 && (
+    <div class="card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-fpl-card">
+          <tr class="text-left text-gray-400 border-b border-gray-700">
+            <th class="py-2.5 px-3 font-medium">#</th>
+            <th class="py-2.5 px-3 font-medium">Player</th>
+            <th class="py-2.5 px-3 font-medium">Pos</th>
+            <th class="py-2.5 px-3 text-right font-medium">Ceiling</th>
+            <th class="py-2.5 px-3 text-right font-medium">Form</th>
+            <th class="py-2.5 px-3 text-right font-medium">BPS</th>
+            <th class="py-2.5 px-3 text-center font-medium">Venue</th>
+            <th class="py-2.5 px-3 text-center font-medium">Flags</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rest.map((c, i) => (
+            <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors">
+              <td class="py-2 px-3 text-gray-500">{i + 4}</td>
+              <td class="py-2 px-3">
+                <a href={`/players/${c.player_id}`} class="link-cyan font-medium">{c.web_name}</a>
+                <span class="text-gray-500 text-xs ml-1">{c.team_short_name}</span>
+              </td>
+              <td class="py-2 px-3"><PositionBadge position={c.position} /></td>
+              <td class="py-2 px-3 text-right font-semibold text-fpl-green tabular-nums">{c.ceiling_score}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{c.form_points}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{c.bps_avg}</td>
+              <td class="py-2 px-3 text-center">
+                {c.is_home === true ? <span class="text-[10px] font-bold text-emerald-400">H</span> : c.is_home === false ? <span class="text-[10px] text-gray-500">A</span> : '-'}
+              </td>
+              <td class="py-2 px-3 text-center flex gap-1 justify-center">
+                {c.is_double_gw && <span class="text-[10px] font-bold text-fpl-pink">DGW</span>}
+                {c.is_penalty_taker && <span class="text-[10px] text-fpl-green">P</span>}
+                {c.is_set_piece_taker && <span class="text-[10px] text-fpl-cyan">SP</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
 </Layout>

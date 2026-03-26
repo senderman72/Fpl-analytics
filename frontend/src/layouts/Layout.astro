@@ -6,33 +6,48 @@ const { title } = Astro.props;
 const currentPath = Astro.url.pathname;
 
 const nav = [
-  { href: '/', label: 'Dashboard' },
-  { href: '/players', label: 'Players' },
-  { href: '/decisions/buy-sell', label: 'Buy/Sell' },
-  { href: '/decisions/captain', label: 'Captain' },
-  { href: '/decisions/chips', label: 'Chips' },
-  { href: '/predictions', label: 'Predictions' },
+  { href: '/', label: 'Dashboard', icon: '⊞' },
+  { href: '/players', label: 'Players', icon: '⊟' },
+  { href: '/decisions/buy-sell', label: 'Transfers', icon: '⇄' },
+  { href: '/decisions/captain', label: 'Captain', icon: '©' },
+  { href: '/decisions/chips', label: 'Chips', icon: '◆' },
+  { href: '/predictions', label: 'Predictions', icon: '⊙' },
 ];
+
+function isActive(href: string) {
+  if (href === '/') return currentPath === '/';
+  return currentPath.startsWith(href);
+}
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="FPL Analytics — data-driven Fantasy Premier League tools: captain picks, transfer advice, points predictions, and fixture analysis." />
     <title>{title} | FPL Analytics</title>
+    <style is:global>
+      html { scroll-behavior: smooth; }
+    </style>
   </head>
-  <body class="bg-fpl-dark text-gray-100 font-sans min-h-screen">
-    <nav class="bg-fpl-purple border-b border-fpl-green/20 px-4 py-3">
-      <div class="max-w-7xl mx-auto flex items-center gap-6">
-        <a href="/" class="text-fpl-green font-bold text-xl tracking-tight">FPL Analytics</a>
-        <div class="flex gap-1">
+  <body class="bg-fpl-dark text-gray-200 font-sans min-h-screen flex flex-col text-sm md:text-base">
+    <!-- Nav -->
+    <nav class="sticky top-0 z-50 bg-fpl-purple/95 backdrop-blur-md border-b border-fpl-green/10">
+      <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2 shrink-0">
+          <span class="text-fpl-green font-extrabold text-lg tracking-tight">FPL</span>
+          <span class="text-white font-semibold text-lg hidden sm:inline">Analytics</span>
+        </a>
+
+        <!-- Desktop nav -->
+        <div class="hidden md:flex items-center gap-1">
           {nav.map(({ href, label }) => (
             <a
               href={href}
               class:list={[
-                'px-3 py-1.5 rounded text-sm font-medium transition-colors',
-                currentPath === href
-                  ? 'bg-fpl-green/20 text-fpl-green'
+                'px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150',
+                isActive(href)
+                  ? 'bg-fpl-green/15 text-fpl-green border-b-2 border-fpl-green'
                   : 'text-gray-300 hover:text-white hover:bg-white/5',
               ]}
             >
@@ -40,10 +55,42 @@ const nav = [
             </a>
           ))}
         </div>
+
+        <!-- Mobile menu -->
+        <details class="md:hidden relative">
+          <summary class="list-none cursor-pointer p-2 rounded-lg hover:bg-white/5">
+            <svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </summary>
+          <div class="absolute right-0 top-12 w-48 bg-fpl-card border border-gray-700 rounded-xl shadow-xl py-2 z-50">
+            {nav.map(({ href, label }) => (
+              <a
+                href={href}
+                class:list={[
+                  'block px-4 py-2.5 text-sm transition-colors',
+                  isActive(href) ? 'text-fpl-green bg-fpl-green/10' : 'text-gray-300 hover:text-white hover:bg-white/5',
+                ]}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+        </details>
       </div>
     </nav>
-    <main class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- Main -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
       <slot />
     </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 py-4 mt-auto">
+      <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-gray-500">
+        <span>FPL Analytics — data from the official FPL API & Understat</span>
+        <span>Built with FastAPI, Astro & SolidJS</span>
+      </div>
+    </footer>
   </body>
 </html>

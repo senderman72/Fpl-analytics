@@ -113,6 +113,17 @@ export interface ChipAdvice {
   recommendation: string | null;
 }
 
+export interface DifferentialPick {
+  player_id: number;
+  web_name: string;
+  team_short_name: string;
+  position: number;
+  now_cost: number;
+  selected_by_percent: string;
+  form_points: number;
+  xgi_per_90: string;
+}
+
 export interface PredictionOut {
   player_id: number;
   web_name: string;

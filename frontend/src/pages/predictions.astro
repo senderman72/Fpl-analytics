@@ -1,52 +1,75 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import HeroCard from '../components/HeroCard.astro';
+import PositionBadge from '../components/PositionBadge.astro';
 import { getGameweeks } from '../api/gameweeks';
 import { getPredictions } from '../api/predictions';
-import { POSITIONS, formatCost, POSITION_COLORS } from '../lib/types';
+import { POSITIONS, formatCost } from '../lib/types';
 
 const gameweeks = await getGameweeks();
 const nextGW = gameweeks.find(gw => gw.is_next);
 const gwId = nextGW?.id ?? gameweeks.filter(gw => gw.is_finished).length + 1;
 
 const predictions = await getPredictions(gwId, { limit: 50 });
+const top3 = predictions.slice(0, 3);
+const rest = predictions.slice(3);
 ---
 
 <Layout title="Predictions">
-  <h1 class="text-2xl font-bold text-white mb-1">Points Predictions</h1>
-  <p class="text-gray-400 mb-6">Predicted points for {nextGW?.name ?? `Gameweek ${gwId}`} — Ridge regression model</p>
+  <div class="flex items-baseline justify-between mb-6">
+    <h1 class="page-title">Points Predictions</h1>
+    <span class="text-gray-400 text-sm">{nextGW?.name ?? `Gameweek ${gwId}`} · Ridge regression</span>
+  </div>
 
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="text-left text-gray-400 border-b border-gray-700">
-          <th class="py-2 px-2">#</th>
-          <th class="py-2 px-2">Player</th>
-          <th class="py-2 px-2">Team</th>
-          <th class="py-2 px-2">Pos</th>
-          <th class="py-2 px-2 text-right">Price</th>
-          <th class="py-2 px-2 text-right">Predicted Pts</th>
-        </tr>
-      </thead>
-      <tbody>
-        {predictions.map((p, i) => (
-          <tr class="border-b border-gray-800 hover:bg-fpl-card/50">
-            <td class="py-2 px-2 text-gray-500">{i + 1}</td>
-            <td class="py-2 px-2">
-              <a href={`/players/${p.player_id}`} class="text-fpl-cyan hover:underline font-medium">{p.web_name}</a>
-            </td>
-            <td class="py-2 px-2 text-gray-400">{p.team_short_name}</td>
-            <td class="py-2 px-2">
-              <span class="text-xs px-1.5 py-0.5 rounded" style={`color: ${POSITION_COLORS[p.position]}; background: ${POSITION_COLORS[p.position]}20`}>
-                {POSITIONS[p.position]}
-              </span>
-            </td>
-            <td class="py-2 px-2 text-right">{formatCost(p.now_cost)}</td>
-            <td class="py-2 px-2 text-right">
-              <span class="text-lg font-bold text-fpl-green">{p.predicted_points}</span>
-            </td>
+  <!-- Top 3 -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    {top3.map((p, i) => (
+      <HeroCard rank={i + 1} accent={i === 0 ? 'border-fpl-gold' : 'border-fpl-green'}>
+        <a href={`/players/${p.player_id}`} class="block">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-white font-bold text-lg">{p.web_name}</span>
+            <PositionBadge position={p.position} />
+          </div>
+          <div class="text-xs text-gray-400 mb-3">{p.team_short_name} · {formatCost(p.now_cost)}</div>
+          <div class="text-center">
+            <div class="text-4xl font-extrabold text-fpl-green">{p.predicted_points}</div>
+            <div class="stat-label mt-1">predicted points</div>
+          </div>
+        </a>
+      </HeroCard>
+    ))}
+  </div>
+
+  <!-- Rest in table -->
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-fpl-card">
+          <tr class="text-left text-gray-400 border-b border-gray-700">
+            <th class="py-2.5 px-3 font-medium">#</th>
+            <th class="py-2.5 px-3 font-medium">Player</th>
+            <th class="py-2.5 px-3 font-medium">Pos</th>
+            <th class="py-2.5 px-3 text-right font-medium">Price</th>
+            <th class="py-2.5 px-3 text-right font-medium">Predicted</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rest.map((p, i) => (
+            <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors">
+              <td class="py-2 px-3 text-gray-500">{i + 4}</td>
+              <td class="py-2 px-3">
+                <a href={`/players/${p.player_id}`} class="link-cyan font-medium">{p.web_name}</a>
+                <span class="text-gray-500 text-xs ml-1">{p.team_short_name}</span>
+              </td>
+              <td class="py-2 px-3"><PositionBadge position={p.position} /></td>
+              <td class="py-2 px-3 text-right tabular-nums">{formatCost(p.now_cost)}</td>
+              <td class="py-2 px-3 text-right">
+                <span class="text-lg font-bold text-fpl-green tabular-nums">{p.predicted_points}</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   </div>
 </Layout>

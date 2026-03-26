@@ -1,7 +1,10 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import PositionBadge from '../../components/PositionBadge.astro';
+import StatCard from '../../components/StatCard.astro';
+import FdrStrip from '../../components/FdrStrip.astro';
 import { getPlayer, getPlayerHistory, getPlayerFixtures } from '../../api/players';
-import { POSITIONS, formatCost, fdrColor } from '../../lib/types';
+import { POSITIONS, formatCost } from '../../lib/types';
 
 const { id } = Astro.params;
 const playerId = Number(id);
@@ -13,112 +16,137 @@ const [player, history, fixtures] = await Promise.all([
 ]);
 
 const posLabel = POSITIONS[player.position];
-const minutesPlayed = history.reduce((sum, h) => sum + h.minutes, 0);
 const totalPoints = history.reduce((sum, h) => sum + h.total_points, 0);
 const totalGoals = history.reduce((sum, h) => sum + h.goals_scored, 0);
 const totalAssists = history.reduce((sum, h) => sum + h.assists, 0);
+const totalMinutes = history.reduce((sum, h) => sum + h.minutes, 0);
+const totalBonus = history.reduce((sum, h) => sum + h.bonus, 0);
+const maxPoints = Math.max(...history.map(h => h.total_points), 1);
 ---
 
 <Layout title={player.web_name}>
-  <!-- Header -->
-  <div class="mb-6">
-    <div class="flex items-baseline gap-3">
-      <h1 class="text-3xl font-bold text-white">{player.first_name} {player.second_name}</h1>
-      <span class="text-fpl-cyan text-lg">{player.team_short_name}</span>
-      <span class="text-gray-400">{posLabel}</span>
-    </div>
-    <div class="flex gap-4 mt-2 text-sm text-gray-400">
-      <span>{formatCost(player.now_cost)}</span>
-      {player.is_penalty_taker && <span class="text-fpl-green">Penalty taker</span>}
-      {player.is_set_piece_taker && <span class="text-fpl-cyan">Set piece taker</span>}
-      {player.news && <span class="text-fpl-pink">{player.news}</span>}
-    </div>
-  </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-    <!-- Season Stats -->
-    <div class="bg-fpl-card rounded-lg p-5 border border-gray-700">
-      <h3 class="text-gray-400 text-sm mb-3 font-medium">Season Stats</h3>
-      <div class="grid grid-cols-2 gap-3">
-        <div><div class="text-gray-400 text-xs">Points</div><div class="text-xl font-bold text-white">{totalPoints}</div></div>
-        <div><div class="text-gray-400 text-xs">Minutes</div><div class="text-xl font-bold text-white">{minutesPlayed}</div></div>
-        <div><div class="text-gray-400 text-xs">Goals</div><div class="text-xl font-bold text-white">{totalGoals}</div></div>
-        <div><div class="text-gray-400 text-xs">Assists</div><div class="text-xl font-bold text-white">{totalAssists}</div></div>
+  <!-- Hero -->
+  <div class="card p-6 mb-6 bg-gradient-to-r from-fpl-purple/80 to-fpl-surface/80">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+      <!-- Player initials avatar -->
+      <div class="w-16 h-16 rounded-full bg-fpl-card border-2 border-fpl-green/30 flex items-center justify-center text-2xl font-extrabold text-fpl-green shrink-0">
+        {player.first_name[0]}{player.second_name[0]}
       </div>
-    </div>
-
-    <!-- Form (6 GW) -->
-    <div class="bg-fpl-card rounded-lg p-5 border border-gray-700">
-      <h3 class="text-gray-400 text-sm mb-3 font-medium">Form (Last 6 GWs)</h3>
-      <div class="grid grid-cols-2 gap-3">
-        <div><div class="text-gray-400 text-xs">Form Pts</div><div class="text-xl font-bold text-fpl-green">{player.form_points ?? '-'}</div></div>
-        <div><div class="text-gray-400 text-xs">Pts/Game</div><div class="text-xl font-bold text-white">{player.pts_per_game ?? '-'}</div></div>
-        <div><div class="text-gray-400 text-xs">xGI/90</div><div class="text-xl font-bold text-white">{player.xgi_per_90 ?? '-'}</div></div>
-        <div><div class="text-gray-400 text-xs">Mins %</div><div class="text-xl font-bold text-white">{player.minutes_pct ? `${Number(player.minutes_pct).toFixed(0)}%` : '-'}</div></div>
-      </div>
-    </div>
-
-    <!-- Understat xG -->
-    <div class="bg-fpl-card rounded-lg p-5 border border-gray-700">
-      <h3 class="text-gray-400 text-sm mb-3 font-medium">Expected (Understat)</h3>
-      <div class="grid grid-cols-2 gap-3">
-        <div><div class="text-gray-400 text-xs">xG</div><div class="text-xl font-bold text-white">{player.season_xg ? Number(player.season_xg).toFixed(1) : '-'}</div></div>
-        <div><div class="text-gray-400 text-xs">xA</div><div class="text-xl font-bold text-white">{player.season_xa ? Number(player.season_xa).toFixed(1) : '-'}</div></div>
-        <div><div class="text-gray-400 text-xs">xGI</div><div class="text-xl font-bold text-fpl-green">{player.season_xgi ? Number(player.season_xgi).toFixed(1) : '-'}</div></div>
-        <div><div class="text-gray-400 text-xs">npxG</div><div class="text-xl font-bold text-white">{player.season_npxg ? Number(player.season_npxg).toFixed(1) : '-'}</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Upcoming Fixtures -->
-  <div class="bg-fpl-card rounded-lg border border-gray-700 mb-8">
-    <h3 class="px-5 py-3 border-b border-gray-700 font-semibold text-white">Upcoming Fixtures</h3>
-    <div class="grid grid-cols-4 md:grid-cols-8 gap-2 p-4">
-      {fixtures.map((f) => (
-        <div class="text-center">
-          <div class="text-xs text-gray-400 mb-1">GW{f.gameweek_id}</div>
-          <div
-            class="rounded px-2 py-2 text-sm font-medium"
-            style={`background-color: ${fdrColor(f.difficulty)}20; color: ${fdrColor(f.difficulty)}`}
-          >
-            {f.opponent_short_name} ({f.is_home ? 'H' : 'A'})
-          </div>
-          {f.is_double_gw && <div class="text-xs text-fpl-pink mt-0.5">DGW</div>}
+      <div class="flex-1">
+        <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+          {player.first_name} <span class="text-fpl-green">{player.second_name}</span>
+        </h1>
+        <div class="flex flex-wrap items-center gap-2 mt-1">
+          <span class="text-fpl-cyan font-semibold">{player.team_short_name}</span>
+          <PositionBadge position={player.position} />
+          <span class="text-gray-300">{formatCost(player.now_cost)}</span>
+          {player.is_penalty_taker && <span class="text-[10px] font-semibold text-fpl-green bg-fpl-green/10 px-1.5 py-0.5 rounded">PEN</span>}
+          {player.is_set_piece_taker && <span class="text-[10px] font-semibold text-fpl-cyan bg-fpl-cyan/10 px-1.5 py-0.5 rounded">SET PIECE</span>}
         </div>
-      ))}
+        {player.news && <div class="text-fpl-pink text-sm mt-1">{player.news}</div>}
+      </div>
+      <div class="flex gap-6 sm:gap-8">
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-fpl-green">{totalPoints}</div>
+          <div class="text-[10px] text-gray-400 uppercase tracking-wider">Points</div>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-white">{totalGoals}</div>
+          <div class="text-[10px] text-gray-400 uppercase tracking-wider">Goals</div>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-white">{totalAssists}</div>
+          <div class="text-[10px] text-gray-400 uppercase tracking-wider">Assists</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- GW History Table -->
-  <div class="bg-fpl-card rounded-lg border border-gray-700">
-    <h3 class="px-5 py-3 border-b border-gray-700 font-semibold text-white">Gameweek History</h3>
+  <!-- Stats row -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+    <div class="card p-3"><StatCard label="Form (6GW)" value={player.form_points ?? '-'} accent="text-fpl-green" /></div>
+    <div class="card p-3"><StatCard label="Pts/Game" value={player.pts_per_game ?? '-'} /></div>
+    <div class="card p-3"><StatCard label="xGI/90" value={player.xgi_per_90 ?? '-'} accent="text-fpl-cyan" /></div>
+    <div class="card p-3"><StatCard label="Mins %" value={player.minutes_pct ? `${Number(player.minutes_pct).toFixed(0)}%` : '-'} /></div>
+    <div class="card p-3"><StatCard label="xG" value={player.season_xg ? Number(player.season_xg).toFixed(1) : '-'} /></div>
+    <div class="card p-3"><StatCard label="xA" value={player.season_xa ? Number(player.season_xa).toFixed(1) : '-'} /></div>
+    <div class="card p-3"><StatCard label="npxG" value={player.season_npxg ? Number(player.season_npxg).toFixed(1) : '-'} /></div>
+    <div class="card p-3"><StatCard label="Bonus" value={totalBonus} /></div>
+  </div>
+
+  <!-- Points chart (pure CSS) -->
+  <div class="card p-5 mb-6">
+    <h3 class="section-title mb-4">Points by Gameweek</h3>
+    <div class="flex items-end gap-[2px] h-32">
+      {history.map((h) => {
+        const height = maxPoints > 0 ? (h.total_points / maxPoints) * 100 : 0;
+        const isHighScore = h.total_points >= 10;
+        return (
+          <div class="flex-1 flex flex-col items-center justify-end group relative" title={`GW${h.gameweek_id}: ${h.total_points} pts`}>
+            <div
+              class:list={[
+                'w-full rounded-t-sm transition-all',
+                isHighScore ? 'bg-fpl-green' : h.total_points > 0 ? 'bg-fpl-cyan/60' : 'bg-gray-700/40',
+                'group-hover:opacity-80',
+              ]}
+              style={`height: ${Math.max(height, 2)}%`}
+            />
+            <div class="absolute -top-5 text-[9px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+              {h.total_points}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+      <span>GW1</span>
+      <span>GW{history.length}</span>
+    </div>
+  </div>
+
+  <!-- Fixtures -->
+  {fixtures.length > 0 && (
+    <div class="card p-5 mb-6">
+      <h3 class="section-title mb-4">Upcoming Fixtures</h3>
+      <FdrStrip fixtures={fixtures} />
+    </div>
+  )}
+
+  <!-- GW History -->
+  <div class="card overflow-hidden">
+    <h3 class="section-title px-5 py-3 border-b border-gray-700/60">Gameweek History</h3>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
-        <thead>
+        <thead class="sticky top-0 bg-fpl-card">
           <tr class="text-left text-gray-400 border-b border-gray-700">
-            <th class="py-2 px-3">GW</th>
-            <th class="py-2 px-3 text-right">Pts</th>
-            <th class="py-2 px-3 text-right">Mins</th>
-            <th class="py-2 px-3 text-right">G</th>
-            <th class="py-2 px-3 text-right">A</th>
-            <th class="py-2 px-3 text-right">CS</th>
-            <th class="py-2 px-3 text-right">Bonus</th>
-            <th class="py-2 px-3 text-right">BPS</th>
-            <th class="py-2 px-3 text-right">ICT</th>
+            <th class="py-2.5 px-3 font-medium">GW</th>
+            <th class="py-2.5 px-3 text-right font-medium">Pts</th>
+            <th class="py-2.5 px-3 text-right font-medium">Mins</th>
+            <th class="py-2.5 px-3 text-right font-medium">G</th>
+            <th class="py-2.5 px-3 text-right font-medium">A</th>
+            <th class="py-2.5 px-3 text-right font-medium">CS</th>
+            <th class="py-2.5 px-3 text-right font-medium">Bonus</th>
+            <th class="py-2.5 px-3 text-right font-medium">BPS</th>
+            <th class="py-2.5 px-3 text-right font-medium">ICT</th>
           </tr>
         </thead>
         <tbody>
           {history.map((h) => (
-            <tr class="border-b border-gray-800">
+            <tr class:list={[
+              'border-b border-gray-800/40',
+              h.total_points >= 10 && 'border-l-2 border-l-fpl-green',
+            ]}>
               <td class="py-2 px-3 text-gray-400">GW{h.gameweek_id}</td>
-              <td class="py-2 px-3 text-right font-medium">{h.total_points}</td>
-              <td class="py-2 px-3 text-right">{h.minutes}</td>
-              <td class="py-2 px-3 text-right">{h.goals_scored || '-'}</td>
-              <td class="py-2 px-3 text-right">{h.assists || '-'}</td>
-              <td class="py-2 px-3 text-right">{h.clean_sheets || '-'}</td>
-              <td class="py-2 px-3 text-right">{h.bonus || '-'}</td>
-              <td class="py-2 px-3 text-right">{h.bps}</td>
-              <td class="py-2 px-3 text-right">{h.ict_index}</td>
+              <td class:list={['py-2 px-3 text-right font-semibold tabular-nums', h.total_points >= 10 ? 'text-fpl-green' : 'text-white']}>
+                {h.total_points}
+              </td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.minutes}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.goals_scored || '-'}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.assists || '-'}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.clean_sheets || '-'}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.bonus || '-'}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.bps}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.ict_index}</td>
             </tr>
           ))}
         </tbody>

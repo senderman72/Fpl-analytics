@@ -3,36 +3,55 @@ import Layout from '../../layouts/Layout.astro';
 import { getChipAdvice } from '../../api/decisions';
 
 const chips = await getChipAdvice();
+const hasRecommendation = chips.some(gw => gw.recommendation);
 ---
 
 <Layout title="Chip Advisor">
-  <h1 class="text-2xl font-bold text-white mb-4">Chip Advisor</h1>
-  <p class="text-gray-400 mb-6">Upcoming gameweeks with DGW/BGW signals for chip timing</p>
+  <h1 class="page-title mb-1">Chip Advisor</h1>
+  <p class="text-gray-400 text-sm mb-6">DGW/BGW calendar for optimal chip timing</p>
 
-  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+  <!-- Alert banner if there's a recommendation -->
+  {hasRecommendation && (
+    <div class="card border-l-3 border-fpl-green p-4 mb-6 bg-fpl-green/5">
+      <div class="font-semibold text-fpl-green text-sm mb-1">Chip Opportunities Detected</div>
+      <div class="text-xs text-gray-300">
+        {chips.filter(gw => gw.recommendation).map(gw => (
+          <span class="mr-3">{gw.name}: {gw.recommendation}</span>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <!-- GW Calendar Grid -->
+  <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2">
     {chips.map((gw) => (
       <div class:list={[
-        'rounded-lg p-4 border text-center',
-        gw.is_double ? 'bg-fpl-green/10 border-fpl-green/40' :
-        gw.is_blank ? 'bg-fpl-pink/10 border-fpl-pink/40' :
-        'bg-fpl-card border-gray-700',
+        'rounded-xl border text-center transition-all',
+        gw.is_double ? 'p-4 bg-fpl-green/8 border-fpl-green/30 ring-1 ring-fpl-green/10' :
+        gw.is_blank ? 'p-4 bg-fpl-pink/8 border-fpl-pink/30 ring-1 ring-fpl-pink/10' :
+        'p-3 bg-fpl-card border-gray-700/40 opacity-60',
       ]}>
-        <div class="text-sm font-medium text-white">{gw.name}</div>
+        <div class:list={[
+          'text-sm font-semibold',
+          gw.is_double ? 'text-fpl-green' : gw.is_blank ? 'text-fpl-pink' : 'text-gray-400',
+        ]}>
+          {gw.name.replace('Gameweek ', 'GW')}
+        </div>
+
         {gw.is_double && (
           <div class="mt-2">
-            <span class="text-xs font-bold text-fpl-green bg-fpl-green/20 px-2 py-0.5 rounded">DGW</span>
+            <span class="text-[10px] font-extrabold text-fpl-green bg-fpl-green/15 px-2.5 py-1 rounded-full">DGW</span>
+            <div class="text-[10px] text-gray-300 mt-1.5 leading-tight">BB / TC</div>
           </div>
         )}
         {gw.is_blank && (
           <div class="mt-2">
-            <span class="text-xs font-bold text-fpl-pink bg-fpl-pink/20 px-2 py-0.5 rounded">BGW</span>
+            <span class="text-[10px] font-extrabold text-fpl-pink bg-fpl-pink/15 px-2.5 py-1 rounded-full">BGW</span>
+            <div class="text-[10px] text-gray-300 mt-1.5 leading-tight">Free Hit</div>
           </div>
         )}
-        {gw.recommendation && (
-          <div class="mt-2 text-xs text-gray-300">{gw.recommendation}</div>
-        )}
         {!gw.is_double && !gw.is_blank && (
-          <div class="mt-2 text-xs text-gray-500">Normal</div>
+          <div class="mt-1 text-[10px] text-gray-600">Normal</div>
         )}
       </div>
     ))}

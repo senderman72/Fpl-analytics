@@ -1,0 +1,16 @@
+---
+interface Props {
+  position: number;
+}
+const { position } = Astro.props;
+
+const badges: Record<number, string> = {
+  1: 'badge-gk',
+  2: 'badge-def',
+  3: 'badge-mid',
+  4: 'badge-fwd',
+};
+const labels: Record<number, string> = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
+---
+
+<span class={badges[position] || 'badge-mid'}>{labels[position] || '?'}</span>

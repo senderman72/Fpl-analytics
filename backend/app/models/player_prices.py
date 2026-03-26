@@ -4,7 +4,7 @@ import datetime as dt
 
 from decimal import Decimal
 
-from sqlalchemy import Date, ForeignKey, Index, Integer, Numeric, SmallInteger
+from sqlalchemy import Date, ForeignKey, Index, Integer, Numeric, SmallInteger, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -13,6 +13,7 @@ from app.core.database import Base
 class PlayerPrice(Base):
     __tablename__ = "player_prices"
     __table_args__ = (
+        UniqueConstraint("player_id", "recorded_at", name="uq_prices_player_date"),
         Index("idx_prices_player", "player_id", "recorded_at"),
     )
 

@@ -33,14 +33,6 @@ const quickLinks = [
         <div>
           <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Next Deadline</div>
           <div class="text-white font-semibold text-lg">{nextGW?.name ?? 'Season Complete'}</div>
-          {nextGW && (
-            <div class="text-gray-400 text-sm mt-0.5">
-              {new Date(nextGW.deadline_time).toLocaleDateString('en-GB', {
-                weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
-                timeZone: 'Europe/London',
-              })} GMT
-            </div>
-          )}
         </div>
         {currentGW && (
           <div class="text-right">

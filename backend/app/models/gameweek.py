@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, SmallInteger, String
+from sqlalchemy import Boolean, DateTime, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -13,7 +13,7 @@ class Gameweek(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
     name: Mapped[str] = mapped_column(String(20))
-    deadline_time: Mapped[datetime]
+    deadline_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_current: Mapped[bool] = mapped_column(Boolean, server_default="false")
     is_next: Mapped[bool] = mapped_column(Boolean, server_default="false")
     is_finished: Mapped[bool] = mapped_column(Boolean, server_default="false")

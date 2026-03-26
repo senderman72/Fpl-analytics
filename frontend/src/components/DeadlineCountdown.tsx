@@ -28,17 +28,26 @@ export default function DeadlineCountdown(props: Props) {
     return t && t.total < 86400000;
   };
 
+  const localDeadline = () =>
+    new Date(props.deadline).toLocaleString(undefined, {
+      weekday: 'short', day: 'numeric', month: 'short',
+      hour: '2-digit', minute: '2-digit',
+    });
+
   return (
     <Show when={time()} fallback={<span class="text-fpl-pink font-bold">DEADLINE PASSED</span>}>
       {(t) => (
-        <div class:list={['flex gap-3', urgent() && 'animate-pulse_soft']}>
-          <Unit value={t().days} label="DAYS" />
-          <Separator />
-          <Unit value={t().hours} label="HRS" />
-          <Separator />
-          <Unit value={t().minutes} label="MIN" />
-          <Separator />
-          <Unit value={t().seconds} label="SEC" urgent={urgent()} />
+        <div>
+          <div classList={{'flex gap-3 justify-center': true, 'animate-pulse_soft': !!urgent()}}>
+            <Unit value={t().days} label="DAYS" />
+            <Separator />
+            <Unit value={t().hours} label="HRS" />
+            <Separator />
+            <Unit value={t().minutes} label="MIN" />
+            <Separator />
+            <Unit value={t().seconds} label="SEC" urgent={!!urgent()} />
+          </div>
+          <div class="text-xs text-gray-500 mt-3 text-center">{localDeadline()}</div>
         </div>
       )}
     </Show>

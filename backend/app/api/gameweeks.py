@@ -25,7 +25,7 @@ async def list_gameweeks(
             GameweekOut(
                 id=gw.id,
                 name=gw.name,
-                deadline_time=gw.deadline_time.isoformat(),
+                deadline_time=gw.deadline_time.isoformat() + ("" if gw.deadline_time.tzinfo else "Z"),
                 is_current=gw.is_current,
                 is_next=gw.is_next,
                 is_finished=gw.is_finished,

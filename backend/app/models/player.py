@@ -2,7 +2,9 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, SmallInteger, String, Text
+from decimal import Decimal
+
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -24,6 +26,12 @@ class Player(Base):
     news: Mapped[str | None] = mapped_column(Text)
     is_penalty_taker: Mapped[bool] = mapped_column(Boolean, server_default="false")
     is_set_piece_taker: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    selected_by_percent: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2), server_default="0"
+    )
+    transfers_in_event: Mapped[int] = mapped_column(Integer, server_default="0")
+    transfers_out_event: Mapped[int] = mapped_column(Integer, server_default="0")
+    cost_change_event: Mapped[int] = mapped_column(SmallInteger, server_default="0")
     updated_at: Mapped[datetime] = mapped_column(server_default="now()")
 
     team: Mapped["Team"] = relationship(back_populates="players")  # noqa: F821

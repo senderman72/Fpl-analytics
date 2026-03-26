@@ -11,16 +11,8 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.core.config import get_settings
 from app.core.database import Base
 
-# Import all model modules so Base.metadata is fully populated.
-# Uncomment as models are added:
-# import app.models.team  # noqa: F401
-# import app.models.player  # noqa: F401
-# import app.models.gameweek  # noqa: F401
-# import app.models.fixture  # noqa: F401
-# import app.models.player_gw_stats  # noqa: F401
-# import app.models.player_gw_xg  # noqa: F401
-# import app.models.player_prices  # noqa: F401
-# import app.models.player_form_cache  # noqa: F401
+# Import all models so Base.metadata is fully populated.
+import app.models  # noqa: F401
 
 config = context.config
 settings = get_settings()

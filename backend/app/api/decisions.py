@@ -96,6 +96,11 @@ async def get_buy_candidates(
                 minutes_pct=form.minutes_pct,
                 ppm=round(ppm, 2),
                 fdr_next_5=fdr_map.get(player.team_id),
+                selected_by_percent=player.selected_by_percent,
+                transfers_in_event=player.transfers_in_event,
+                recommendation=_buy_recommendation(
+                    form, fdr_map.get(player.team_id), player, ppm
+                ),
             )
         )
 
@@ -178,6 +183,9 @@ async def get_captain_picks(
                 is_double_gw=fi.get("is_double", False),
                 is_penalty_taker=player.is_penalty_taker,
                 is_set_piece_taker=player.is_set_piece_taker,
+                recommendation=_captain_recommendation(
+                    player, form, ceilings.get(player.id, 0), fi
+                ),
             )
         )
 
@@ -273,3 +281,73 @@ async def get_differentials(
 
     picks.sort(key=lambda p: float(p.xgi_per_90), reverse=True)
     return APIResponse(data=picks[:limit])
+
+
+def _buy_recommendation(
+    form: "PlayerFormCache",  # type: ignore[name-defined]
+    fdr: Decimal | None,
+    player: "Player",  # type: ignore[name-defined]
+    ppm: Decimal,
+) -> str:
+    """Generate a plain English buy recommendation."""
+    parts: list[str] = []
+
+    if fdr is not None and float(fdr) <= 2.5:
+        parts.append("easy fixtures ahead")
+    elif fdr is not None and float(fdr) >= 3.5:
+        parts.append("tough fixtures ahead")
+
+    if form.total_points >= 30:
+        parts.append("in great form")
+    elif form.total_points >= 20:
+        parts.append("decent recent form")
+
+    if float(form.xgi_per_90) >= 0.5:
+        parts.append("strong underlying stats")
+
+    if player.transfers_in_event > 10000:
+        parts.append("trending transfer target")
+
+    if float(ppm) >= 5:
+        parts.append("excellent value for money")
+
+    if player.is_penalty_taker:
+        parts.append("penalty taker")
+
+    if not parts:
+        parts.append("steady option")
+
+    return parts[0].capitalize() + (", " + ", ".join(parts[1:]) if len(parts) > 1 else "")
+
+
+def _captain_recommendation(
+    player: "Player",  # type: ignore[name-defined]
+    form: "PlayerFormCache",  # type: ignore[name-defined]
+    ceiling: int,
+    fixture_info: dict,
+) -> str:
+    """Generate a plain English captain recommendation."""
+    parts: list[str] = []
+
+    if fixture_info.get("is_double"):
+        parts.append("double gameweek — plays twice")
+    elif fixture_info.get("is_home"):
+        parts.append("home fixture")
+    else:
+        parts.append("away fixture")
+
+    if ceiling >= 15:
+        parts.append(f"ceiling of {ceiling} pts shows explosive potential")
+    elif ceiling >= 10:
+        parts.append(f"ceiling of {ceiling} pts")
+
+    if form.total_points >= 30:
+        parts.append(f"{form.total_points} pts in last 6 GWs")
+
+    if player.is_penalty_taker:
+        parts.append("on penalties")
+
+    if player.is_set_piece_taker:
+        parts.append("takes set pieces")
+
+    return ". ".join(p.capitalize() if i == 0 else p for i, p in enumerate(parts))

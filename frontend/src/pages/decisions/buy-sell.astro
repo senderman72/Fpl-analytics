@@ -29,8 +29,8 @@ const rest = buys.slice(3);
             <div><div class="stat-label">PPM</div><div class="text-lg font-extrabold text-white">{b.ppm}</div></div>
             <div><div class="stat-label">Form</div><div class="text-lg font-extrabold text-fpl-green">{b.form_points}</div></div>
           </div>
-          {b.fdr_next_5 && (
-            <div class="mt-2 text-xs text-gray-400">FDR next 5: <span class="text-white font-medium">{b.fdr_next_5}</span></div>
+          {b.recommendation && (
+            <div class="mt-2 text-xs text-gray-300 leading-relaxed">{b.recommendation}</div>
           )}
         </a>
       </HeroCard>

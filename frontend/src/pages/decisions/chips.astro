@@ -1,6 +1,8 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import Tooltip from '../../components/Tooltip.astro';
 import { getChipAdvice } from '../../api/decisions';
+import { STAT_HELP } from '../../lib/explanations';
 
 const chips = await getChipAdvice();
 const hasRecommendation = chips.some(gw => gw.recommendation);
@@ -8,7 +10,23 @@ const hasRecommendation = chips.some(gw => gw.recommendation);
 
 <Layout title="Chip Advisor">
   <h1 class="page-title mb-1">Chip Advisor</h1>
-  <p class="text-gray-400 text-sm mb-6">DGW/BGW calendar for optimal chip timing</p>
+  <p class="text-gray-400 text-sm mb-6">Plan when to use your chips for maximum impact</p>
+
+  <!-- Chip explainer for beginners -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+    <div class="card p-4 border-l-3 border-fpl-green">
+      <Tooltip text={STAT_HELP.dgw}><div class="font-semibold text-fpl-green text-sm">Double Gameweek (DGW)</div></Tooltip>
+      <p class="text-xs text-gray-300 mt-1">A team plays two matches in one week. Their players can score points from both games — ideal for <strong>Bench Boost</strong> (all your bench plays) or <strong>Triple Captain</strong> (3x your captain's points).</p>
+    </div>
+    <div class="card p-4 border-l-3 border-fpl-pink">
+      <Tooltip text={STAT_HELP.bgw}><div class="font-semibold text-fpl-pink text-sm">Blank Gameweek (BGW)</div></Tooltip>
+      <p class="text-xs text-gray-300 mt-1">Some teams have no match this week — their players score 0. Use your <strong>Free Hit</strong> chip to pick a whole new squad for just that week.</p>
+    </div>
+    <div class="card p-4 border-l-3 border-fpl-cyan">
+      <div class="font-semibold text-fpl-cyan text-sm">Wildcard</div>
+      <p class="text-xs text-gray-300 mt-1">Unlimited free transfers for one week. Best used when your squad needs a major overhaul — often before a run of DGWs.</p>
+    </div>
+  </div>
 
   <!-- Alert banner if there's a recommendation -->
   {hasRecommendation && (

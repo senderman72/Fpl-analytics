@@ -3,8 +3,10 @@ import Layout from '../../layouts/Layout.astro';
 import PositionBadge from '../../components/PositionBadge.astro';
 import StatCard from '../../components/StatCard.astro';
 import FdrStrip from '../../components/FdrStrip.astro';
+import Tooltip from '../../components/Tooltip.astro';
 import { getPlayer, getPlayerHistory, getPlayerFixtures } from '../../api/players';
 import { POSITIONS, formatCost } from '../../lib/types';
+import { STAT_HELP } from '../../lib/explanations';
 
 const { id } = Astro.params;
 const playerId = Number(id);
@@ -60,6 +62,75 @@ const maxPoints = Math.max(...history.map(h => h.total_points), 1);
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Transfer Activity + Expected vs Actual -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <!-- Transfer Activity -->
+    <div class="card p-5">
+      <h3 class="section-title mb-3">Transfer Activity</h3>
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <div class="stat-label">Ownership</div>
+          <div class="text-xl font-extrabold text-white">{player.selected_by_percent}%</div>
+        </div>
+        <div>
+          <div class="stat-label">Transferred In</div>
+          <div class="text-xl font-extrabold text-fpl-green">
+            {((player.transfers_in_event ?? 0) / 1000).toFixed(1)}k
+          </div>
+        </div>
+        <div>
+          <div class="stat-label">Transferred Out</div>
+          <div class="text-xl font-extrabold text-fpl-pink">
+            {((player.transfers_out_event ?? 0) / 1000).toFixed(1)}k
+          </div>
+        </div>
+      </div>
+      {player.cost_change_event !== 0 && player.cost_change_event != null && (
+        <div class="mt-3 text-sm">
+          Price change: <span class:list={[player.cost_change_event > 0 ? 'text-fpl-green' : 'text-fpl-pink', 'font-bold']}>
+            {player.cost_change_event > 0 ? '+' : ''}{(player.cost_change_event / 10).toFixed(1)}m
+          </span>
+        </div>
+      )}
+    </div>
+
+    <!-- Expected vs Actual -->
+    {player.season_xg && player.season_goals != null && (
+      <div class="card p-5">
+        <Tooltip text={STAT_HELP.xg}><h3 class="section-title mb-3">Expected vs Actual</h3></Tooltip>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-gray-400">Goals: {player.season_goals} scored from {Number(player.season_xg).toFixed(1)} xG</span>
+              <span class:list={[player.season_goals > Number(player.season_xg) ? 'text-fpl-green' : 'text-fpl-pink']}>
+                {player.season_goals > Number(player.season_xg) ? 'Overperforming' : 'Underperforming'}
+              </span>
+            </div>
+            <div class="flex gap-1 h-4">
+              <div class="bg-fpl-green/60 rounded-sm" style={`width: ${Math.min(100, (player.season_goals / Math.max(Number(player.season_xg), player.season_goals, 1)) * 100)}%`} title={`${player.season_goals} goals`}></div>
+              <div class="bg-fpl-cyan/30 rounded-sm" style={`width: ${Math.min(100, (Number(player.season_xg) / Math.max(Number(player.season_xg), player.season_goals, 1)) * 100)}%`} title={`${Number(player.season_xg).toFixed(1)} xG`}></div>
+            </div>
+            <div class="flex gap-3 text-[10px] text-gray-500 mt-1">
+              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-fpl-green/60"></span>Actual</span>
+              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-fpl-cyan/30"></span>Expected</span>
+            </div>
+          </div>
+          {player.season_assists != null && player.season_xa && (
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-gray-400">Assists: {player.season_assists} from {Number(player.season_xa).toFixed(1)} xA</span>
+              </div>
+              <div class="flex gap-1 h-4">
+                <div class="bg-fpl-green/60 rounded-sm" style={`width: ${Math.min(100, (player.season_assists / Math.max(Number(player.season_xa), player.season_assists, 1)) * 100)}%`}></div>
+                <div class="bg-fpl-cyan/30 rounded-sm" style={`width: ${Math.min(100, (Number(player.season_xa) / Math.max(Number(player.season_xa), player.season_assists, 1)) * 100)}%`}></div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
   </div>
 
   <!-- Stats row -->

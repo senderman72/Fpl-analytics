@@ -45,6 +45,10 @@ def normalise_player(raw: dict[str, Any]) -> dict[str, Any]:
         "news": raw.get("news") or None,
         "is_penalty_taker": _is_penalty_taker(raw),
         "is_set_piece_taker": _is_set_piece_taker(raw),
+        "selected_by_percent": Decimal(str(raw.get("selected_by_percent", "0"))),
+        "transfers_in_event": raw.get("transfers_in_event", 0),
+        "transfers_out_event": raw.get("transfers_out_event", 0),
+        "cost_change_event": raw.get("cost_change_event", 0),
         "updated_at": dt.datetime.now(dt.UTC),
     }
 

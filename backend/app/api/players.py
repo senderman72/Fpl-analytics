@@ -82,6 +82,10 @@ async def list_players(
                 xgi_per_90=form.xgi_per_90 if form else None,
                 minutes_pct=form.minutes_pct if form else None,
                 bps_avg=form.bps_avg if form else None,
+                selected_by_percent=player.selected_by_percent,
+                transfers_in_event=player.transfers_in_event,
+                transfers_out_event=player.transfers_out_event,
+                cost_change_event=player.cost_change_event,
             )
         )
 
@@ -125,6 +129,21 @@ async def get_player(
     )
     xg = xg_result.scalars().first()
 
+    # Season actuals from GW stats
+    from sqlalchemy import func as sa_func
+
+    season_result = await session.execute(
+        select(
+            sa_func.sum(PlayerGWStats.goals_scored),
+            sa_func.sum(PlayerGWStats.assists),
+            sa_func.sum(PlayerGWStats.total_points),
+        ).where(PlayerGWStats.player_id == player_id)
+    )
+    season_row = season_result.first()
+    s_goals = season_row[0] or 0 if season_row else 0
+    s_assists = season_row[1] or 0 if season_row else 0
+    s_points = season_row[2] or 0 if season_row else 0
+
     return APIResponse(
         data=PlayerDetail(
             id=player.id,
@@ -146,12 +165,19 @@ async def get_player(
             xgi_per_90=form.xgi_per_90 if form else None,
             minutes_pct=form.minutes_pct if form else None,
             bps_avg=form.bps_avg if form else None,
+            selected_by_percent=player.selected_by_percent,
+            transfers_in_event=player.transfers_in_event,
+            transfers_out_event=player.transfers_out_event,
+            cost_change_event=player.cost_change_event,
             season_xg=xg.xg if xg else None,
             season_xa=xg.xa if xg else None,
             season_xgi=xg.xgi if xg else None,
             season_npxg=xg.npxg if xg else None,
             season_games=xg.games if xg else None,
             season_minutes=xg.minutes if xg else None,
+            season_goals=s_goals,
+            season_assists=s_assists,
+            season_points=s_points,
         )
     )
 

@@ -15,8 +15,11 @@ class BuyCandidate(BaseModel):
     pts_per_game: Decimal
     xgi_per_90: Decimal
     minutes_pct: Decimal
-    ppm: Decimal  # points per million
+    ppm: Decimal
     fdr_next_5: Decimal | None = None
+    selected_by_percent: Decimal | None = None
+    transfers_in_event: int | None = None
+    recommendation: str = ""
 
 
 class CaptainPick(BaseModel):
@@ -33,6 +36,7 @@ class CaptainPick(BaseModel):
     is_penalty_taker: bool
     is_set_piece_taker: bool
     predicted_points: Decimal | None = None
+    recommendation: str = ""
 
 
 class ChipAdvice(BaseModel):

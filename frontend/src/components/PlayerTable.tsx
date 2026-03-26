@@ -103,8 +103,8 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
                   <th class="py-3 px-3 text-right font-medium">Form</th>
                   <th class="py-3 px-3 text-right font-medium">Pts/G</th>
                   <th class="py-3 px-3 text-right font-medium">xGI/90</th>
-                  <th class="py-3 px-3 text-right font-medium">Mins</th>
-                  <th class="py-3 px-3 text-right font-medium">BPS</th>
+                  <th class="py-3 px-3 text-right font-medium">Own%</th>
+                  <th class="py-3 px-3 text-right font-medium">Transfers</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,8 +135,21 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
                       <td class="py-2.5 px-3 text-right font-semibold text-fpl-green tabular-nums">{p.form_points ?? '-'}</td>
                       <td class="py-2.5 px-3 text-right tabular-nums">{p.pts_per_game ?? '-'}</td>
                       <td class="py-2.5 px-3 text-right tabular-nums">{p.xgi_per_90 ?? '-'}</td>
-                      <td class="py-2.5 px-3 text-right tabular-nums">{p.minutes_pct ? `${Number(p.minutes_pct).toFixed(0)}%` : '-'}</td>
-                      <td class="py-2.5 px-3 text-right tabular-nums">{p.bps_avg ?? '-'}</td>
+                      <td class="py-2.5 px-3 text-right tabular-nums">
+                        <span class={Number(p.selected_by_percent ?? 0) > 30 ? 'text-fpl-green' : Number(p.selected_by_percent ?? 0) < 5 ? 'text-fpl-pink' : ''}>
+                          {p.selected_by_percent ?? '-'}%
+                        </span>
+                      </td>
+                      <td class="py-2.5 px-3 text-right tabular-nums">
+                        {(() => {
+                          const net = (p.transfers_in_event ?? 0) - (p.transfers_out_event ?? 0);
+                          return (
+                            <span class={net > 0 ? 'text-fpl-green' : net < 0 ? 'text-fpl-pink' : 'text-gray-400'}>
+                              {net > 0 ? '+' : ''}{(net / 1000).toFixed(1)}k
+                            </span>
+                          );
+                        })()}
+                      </td>
                     </tr>
                   )}
                 </For>

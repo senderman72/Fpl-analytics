@@ -3,19 +3,24 @@ import Layout from '../layouts/Layout.astro';
 import DeadlineCountdown from '../components/DeadlineCountdown';
 import HeroCard from '../components/HeroCard.astro';
 import PositionBadge from '../components/PositionBadge.astro';
-import StatCard from '../components/StatCard.astro';
+import Tooltip from '../components/Tooltip.astro';
 import { getGameweeks } from '../api/gameweeks';
-import { getCaptainPicks, getDifferentials } from '../api/decisions';
+import { getBuyCandidates, getCaptainPicks, getDifferentials } from '../api/decisions';
 import { getPlayers } from '../api/players';
 import { POSITIONS, formatCost } from '../lib/types';
+import { STAT_HELP } from '../lib/explanations';
 
 const gameweeks = await getGameweeks();
 const currentGW = gameweeks.find(gw => gw.is_current);
 const nextGW = gameweeks.find(gw => gw.is_next);
 const finishedCount = gameweeks.filter(gw => gw.is_finished).length;
 const captains = await getCaptainPicks(5);
-const topForm = await getPlayers({ sort_by: 'form_points', limit: 5 });
+const buys = await getBuyCandidates({ limit: 3 });
+const trending = await getPlayers({ sort_by: 'form_points', limit: 10 });
+const trendingSorted = [...trending].sort((a, b) => (b.transfers_in_event ?? 0) - (a.transfers_in_event ?? 0)).slice(0, 5);
 const differentials = await getDifferentials({ limit: 5 });
+
+const topCaptain = captains[0];
 
 const quickLinks = [
   { href: '/decisions/buy-sell', label: 'Transfers', desc: 'Find your next move', color: 'border-fpl-green' },
@@ -26,7 +31,7 @@ const quickLinks = [
 ---
 
 <Layout title="Dashboard">
-  <!-- Hero: Deadline + GW Status -->
+  <!-- Hero: Deadline + Quick Actions -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
     <div class="lg:col-span-2 card p-6">
       <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5">
@@ -45,11 +50,8 @@ const quickLinks = [
         )}
       </div>
 
-      {nextGW && (
-        <DeadlineCountdown client:load deadline={nextGW.deadline_time} />
-      )}
+      {nextGW && <DeadlineCountdown client:load deadline={nextGW.deadline_time} />}
 
-      <!-- Season progress -->
       <div class="mt-5 pt-4 border-t border-gray-700/50">
         <div class="flex justify-between text-xs text-gray-400 mb-1.5">
           <span>Season Progress</span>
@@ -61,7 +63,6 @@ const quickLinks = [
       </div>
     </div>
 
-    <!-- Quick Actions -->
     <div class="flex flex-col gap-2">
       {quickLinks.map(({ href, label, desc, color }) => (
         <a href={href} class:list={['card-hover p-4 border-l-3 flex items-center gap-3 group', color]}>
@@ -77,73 +78,90 @@ const quickLinks = [
     </div>
   </div>
 
-  <!-- Three columns: Captain Picks, Hot Form, Differentials -->
+  <!-- Captain Recommendation Banner -->
+  {topCaptain && (
+    <a href="/decisions/captain" class="block card border-l-3 border-fpl-gold p-5 mb-6 bg-gradient-to-r from-fpl-gold/5 to-transparent hover:from-fpl-gold/10 transition-colors">
+      <div class="flex items-center gap-1 text-fpl-gold text-xs font-bold uppercase tracking-wider mb-1">
+        <span>Captain Pick of the Week</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xl font-extrabold text-white">{topCaptain.web_name}</span>
+        <span class="text-gray-400">{topCaptain.team_short_name}</span>
+        <PositionBadge position={topCaptain.position} />
+      </div>
+      <div class="text-sm text-gray-300 mt-1">{topCaptain.recommendation}</div>
+    </a>
+  )}
+
+  <!-- Action Cards: Best Buys + Trending + Differentials -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Captain Picks -->
+    <!-- Best Transfers In -->
     <div class="card overflow-hidden">
       <div class="px-5 py-3 border-b border-gray-700/60 flex justify-between items-center">
-        <h2 class="section-title">Captain Picks</h2>
-        <a href="/decisions/captain" class="link-cyan text-xs">View all</a>
+        <h2 class="section-title">Best Transfers In</h2>
+        <a href="/decisions/buy-sell" class="link-cyan text-xs">View all</a>
       </div>
       <div class="divide-y divide-gray-800/60">
-        {captains.map((c, i) => (
-          <a href={`/players/${c.player_id}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
-            <span class:list={[
-              'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold',
-              i === 0 ? 'bg-fpl-gold/15 text-fpl-gold' : 'bg-gray-700/50 text-gray-400',
-            ]}>{i + 1}</span>
-            <div class="flex-1 min-w-0">
-              <div class="text-white font-medium truncate">{c.web_name}</div>
-              <div class="text-xs text-gray-400">{c.team_short_name} <PositionBadge position={c.position} /></div>
+        {buys.map((b, i) => (
+          <a href={`/players/${b.player_id}`} class="px-5 py-3 block hover:bg-white/3 transition-colors">
+            <div class="flex items-center gap-3">
+              <span class:list={[
+                'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold',
+                i === 0 ? 'bg-fpl-green/15 text-fpl-green' : 'bg-gray-700/50 text-gray-400',
+              ]}>{i + 1}</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-white font-medium truncate">{b.web_name} <span class="text-gray-500 text-xs">{b.team_short_name}</span></div>
+                <div class="text-xs text-gray-400">{formatCost(b.now_cost)} · {b.selected_by_percent}% owned</div>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="text-fpl-green font-bold text-sm">{b.xgi_per_90} xGI</div>
+              </div>
             </div>
-            <div class="text-right shrink-0">
-              <div class="text-fpl-green font-bold">{c.ceiling_score}</div>
-              <div class="text-[10px] text-gray-500">ceiling</div>
-            </div>
+            <div class="text-xs text-gray-400 mt-1 ml-10">{b.recommendation}</div>
           </a>
         ))}
       </div>
     </div>
 
-    <!-- Hot Form -->
+    <!-- Trending (most transferred in) -->
     <div class="card overflow-hidden">
       <div class="px-5 py-3 border-b border-gray-700/60 flex justify-between items-center">
-        <h2 class="section-title">Hot Form</h2>
-        <a href="/players?sort_by=form_points" class="link-cyan text-xs">View all</a>
+        <Tooltip text={STAT_HELP.transfers_in}><h2 class="section-title">Trending</h2></Tooltip>
+        <span class="text-xs text-gray-500">Most transferred in</span>
       </div>
       <div class="divide-y divide-gray-800/60">
-        {topForm.map((p, i) => (
-          <a href={`/players/${p.id}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
-            <span class:list={[
-              'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold',
-              i === 0 ? 'bg-fpl-green/15 text-fpl-green' : 'bg-gray-700/50 text-gray-400',
-            ]}>{i + 1}</span>
-            <div class="flex-1 min-w-0">
-              <div class="text-white font-medium truncate">{p.web_name}</div>
-              <div class="text-xs text-gray-400">{p.team_short_name} {formatCost(p.now_cost)}</div>
-            </div>
-            <div class="text-right shrink-0">
-              <div class="text-fpl-green font-bold">{p.form_points}</div>
-              <div class="text-[10px] text-gray-500">{p.pts_per_game} pts/g</div>
-            </div>
-          </a>
-        ))}
+        {trendingSorted.map((p) => {
+          const netTransfers = (p.transfers_in_event ?? 0) - (p.transfers_out_event ?? 0);
+          return (
+            <a href={`/players/${p.id}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
+              <div class="flex-1 min-w-0">
+                <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-500 text-xs">{p.team_short_name}</span></div>
+                <div class="text-xs text-gray-400">{formatCost(p.now_cost)} · {p.selected_by_percent}% owned</div>
+              </div>
+              <div class="text-right shrink-0">
+                <div class:list={['font-bold text-sm', netTransfers > 0 ? 'text-fpl-green' : 'text-fpl-pink']}>
+                  {netTransfers > 0 ? '+' : ''}{(netTransfers / 1000).toFixed(1)}k
+                </div>
+                <div class="text-[10px] text-gray-500">net transfers</div>
+              </div>
+            </a>
+          );
+        })}
       </div>
     </div>
 
     <!-- Differentials -->
     <div class="card overflow-hidden">
       <div class="px-5 py-3 border-b border-gray-700/60 flex justify-between items-center">
-        <h2 class="section-title">Differentials</h2>
+        <Tooltip text={STAT_HELP.ownership}><h2 class="section-title">Differentials</h2></Tooltip>
         <span class="text-xs text-gray-500">&lt;5% owned</span>
       </div>
       <div class="divide-y divide-gray-800/60">
-        {differentials.map((d, i) => (
+        {differentials.map((d) => (
           <a href={`/players/${d.player_id}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
-            <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-fpl-pink/15 text-fpl-pink">{i + 1}</span>
             <div class="flex-1 min-w-0">
-              <div class="text-white font-medium truncate">{d.web_name}</div>
-              <div class="text-xs text-gray-400">{d.team_short_name} {formatCost(d.now_cost)} · {d.selected_by_percent}%</div>
+              <div class="text-white font-medium truncate">{d.web_name} <span class="text-gray-500 text-xs">{d.team_short_name}</span></div>
+              <div class="text-xs text-gray-400">{formatCost(d.now_cost)} · only {d.selected_by_percent}% owned</div>
             </div>
             <div class="text-right shrink-0">
               <div class="text-fpl-cyan font-bold">{d.xgi_per_90}</div>

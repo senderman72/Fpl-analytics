@@ -2,9 +2,11 @@
 import Layout from '../../layouts/Layout.astro';
 import HeroCard from '../../components/HeroCard.astro';
 import PositionBadge from '../../components/PositionBadge.astro';
+import Tooltip from '../../components/Tooltip.astro';
 import { getCaptainPicks } from '../../api/decisions';
 import { getGameweeks } from '../../api/gameweeks';
 import { POSITIONS, formatCost } from '../../lib/types';
+import { STAT_HELP } from '../../lib/explanations';
 
 const picks = await getCaptainPicks(15);
 const gameweeks = await getGameweeks();
@@ -40,6 +42,10 @@ const rest = picks.slice(3);
             {c.is_double_gw && <span class="text-[10px] font-bold text-fpl-pink bg-fpl-pink/10 px-2 py-0.5 rounded-full">DGW</span>}
             {c.is_penalty_taker && <span class="text-[10px] font-bold text-fpl-green bg-fpl-green/10 px-2 py-0.5 rounded-full">PEN</span>}
             {c.is_set_piece_taker && <span class="text-[10px] font-bold text-fpl-cyan bg-fpl-cyan/10 px-2 py-0.5 rounded-full">SET PIECE</span>}
+          </div>
+          {c.recommendation && (
+            <div class="text-xs text-gray-300 mt-3 leading-relaxed">{c.recommendation}</div>
+          )}
           </div>
         </a>
       </HeroCard>

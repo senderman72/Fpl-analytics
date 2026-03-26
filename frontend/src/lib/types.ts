@@ -19,6 +19,10 @@ export interface PlayerSummary {
   xgi_per_90: string | null;
   minutes_pct: string | null;
   bps_avg: string | null;
+  selected_by_percent: string | null;
+  transfers_in_event: number | null;
+  transfers_out_event: number | null;
+  cost_change_event: number | null;
 }
 
 export interface PlayerDetail extends PlayerSummary {
@@ -29,6 +33,9 @@ export interface PlayerDetail extends PlayerSummary {
   season_npxg: string | null;
   season_games: number | null;
   season_minutes: number | null;
+  season_goals: number | null;
+  season_assists: number | null;
+  season_points: number | null;
 }
 
 export interface PlayerGWHistory {
@@ -87,6 +94,9 @@ export interface BuyCandidate {
   minutes_pct: string;
   ppm: string;
   fdr_next_5: string | null;
+  selected_by_percent: string | null;
+  transfers_in_event: number | null;
+  recommendation: string;
 }
 
 export interface CaptainPick {
@@ -103,6 +113,7 @@ export interface CaptainPick {
   is_penalty_taker: boolean;
   is_set_piece_taker: boolean;
   predicted_points: string | null;
+  recommendation: string;
 }
 
 export interface ChipAdvice {

@@ -25,6 +25,11 @@ class PlayerSummary(BaseModel):
     xgi_per_90: Decimal | None = None
     minutes_pct: Decimal | None = None
     bps_avg: Decimal | None = None
+    # Ownership + transfers
+    selected_by_percent: Decimal | None = None
+    transfers_in_event: int | None = None
+    transfers_out_event: int | None = None
+    cost_change_event: int | None = None
 
 
 class PlayerDetail(PlayerSummary):
@@ -36,6 +41,10 @@ class PlayerDetail(PlayerSummary):
     season_npxg: Decimal | None = None
     season_games: int | None = None
     season_minutes: int | None = None
+    # Season actuals (for expected vs actual comparison)
+    season_goals: int | None = None
+    season_assists: int | None = None
+    season_points: int | None = None
 
 
 class PlayerGWHistory(BaseModel):

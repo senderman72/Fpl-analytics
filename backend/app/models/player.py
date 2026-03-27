@@ -14,6 +14,7 @@ class Player(Base):
     __tablename__ = "players"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
+    code: Mapped[int] = mapped_column(Integer, server_default="0")
     understat_id: Mapped[int | None] = mapped_column()
     team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"))
     web_name: Mapped[str] = mapped_column(String(80))

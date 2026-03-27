@@ -24,6 +24,20 @@ from app.schemas.player import (
 
 router = APIRouter(prefix="/players", tags=["players"])
 
+PL_CDN = "https://resources.premierleague.com/premierleague"
+
+
+def _photo_url(player_code: int) -> str | None:
+    if not player_code:
+        return None
+    return f"{PL_CDN}/photos/players/110x140/p{player_code}.png"
+
+
+def _badge_url(team_code: int) -> str | None:
+    if not team_code:
+        return None
+    return f"{PL_CDN}/badges/100/t{team_code}.png"
+
 
 @router.get("", response_model=APIResponse[list[PlayerSummary]])
 async def list_players(
@@ -39,7 +53,7 @@ async def list_players(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[list[PlayerSummary]]:
     stmt = (
-        select(Player, Team.short_name, PlayerFormCache)
+        select(Player, Team.short_name, Team.code.label("team_code"), PlayerFormCache)
         .join(Team, Player.team_id == Team.id)
         .outerjoin(
             PlayerFormCache,
@@ -61,7 +75,7 @@ async def list_players(
     rows = result.all()
 
     players = []
-    for player, team_short, form in rows:
+    for player, team_short, team_code, form in rows:
         players.append(
             PlayerSummary(
                 id=player.id,
@@ -77,6 +91,8 @@ async def list_players(
                 news=player.news,
                 is_penalty_taker=player.is_penalty_taker,
                 is_set_piece_taker=player.is_set_piece_taker,
+                photo_url=_photo_url(player.code),
+                team_badge_url=_badge_url(team_code),
                 form_points=form.total_points if form else None,
                 pts_per_game=form.pts_per_game if form else None,
                 xgi_per_90=form.xgi_per_90 if form else None,
@@ -108,14 +124,14 @@ async def get_player(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[PlayerDetail]:
     result = await session.execute(
-        select(Player, Team.short_name)
+        select(Player, Team.short_name, Team.code.label("team_code"))
         .join(Team, Player.team_id == Team.id)
         .where(Player.id == player_id)
     )
     row = result.first()
     if not row:
         raise HTTPException(status_code=404, detail="Player not found")
-    player, team_short = row
+    player, team_short, team_code = row
 
     form_result = await session.execute(
         select(PlayerFormCache).where(
@@ -159,6 +175,8 @@ async def get_player(
             news=player.news,
             is_penalty_taker=player.is_penalty_taker,
             is_set_piece_taker=player.is_set_piece_taker,
+            photo_url=_photo_url(player.code),
+            team_badge_url=_badge_url(team_code),
             understat_id=player.understat_id,
             form_points=form.total_points if form else None,
             pts_per_game=form.pts_per_game if form else None,

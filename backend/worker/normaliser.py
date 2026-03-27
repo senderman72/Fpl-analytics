@@ -18,6 +18,7 @@ def normalise_team(raw: dict[str, Any]) -> dict[str, Any]:
     """Map a raw FPL API team object to the teams table columns."""
     return {
         "id": raw["id"],
+        "code": raw["code"],
         "name": raw["name"],
         "short_name": raw["short_name"],
         "strength_overall_home": raw["strength_overall_home"],
@@ -34,6 +35,7 @@ def normalise_player(raw: dict[str, Any]) -> dict[str, Any]:
     """Map a raw FPL API element object to the players table columns."""
     return {
         "id": raw["id"],
+        "code": raw["code"],
         "team_id": raw["team"],
         "web_name": raw["web_name"],
         "first_name": raw["first_name"],

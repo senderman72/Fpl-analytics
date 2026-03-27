@@ -30,9 +30,18 @@ const maxPoints = Math.max(...history.map(h => h.total_points), 1);
   <!-- Hero -->
   <div class="card p-6 mb-6 bg-gradient-to-r from-fpl-purple/80 to-fpl-surface/80">
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-      <!-- Player initials avatar -->
-      <div class="w-16 h-16 rounded-full bg-fpl-card border-2 border-fpl-green/30 flex items-center justify-center text-2xl font-extrabold text-fpl-green shrink-0">
-        {player.first_name[0]}{player.second_name[0]}
+      <!-- Player photo + team badge -->
+      <div class="relative shrink-0">
+        {player.photo_url ? (
+          <img src={player.photo_url} alt={player.web_name} class="w-24 h-24 md:w-28 md:h-28 rounded-xl object-cover object-top bg-fpl-card border-2 border-fpl-green/20" loading="lazy"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+        ) : null}
+        <div class:list={['w-24 h-24 md:w-28 md:h-28 rounded-xl bg-fpl-card border-2 border-fpl-green/20 items-center justify-center text-3xl font-extrabold text-fpl-green', player.photo_url ? 'hidden' : 'flex']}>
+          {player.first_name[0]}{player.second_name[0]}
+        </div>
+        {player.team_badge_url && (
+          <img src={player.team_badge_url} alt={player.team_short_name ?? ''} class="absolute -bottom-2 -right-2 w-9 h-9 drop-shadow-md" loading="lazy" />
+        )}
       </div>
       <div class="flex-1">
         <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
@@ -133,17 +142,32 @@ const maxPoints = Math.max(...history.map(h => h.total_points), 1);
     )}
   </div>
 
-  <!-- Stats row -->
-  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
-    <div class="card p-3"><StatCard label="Form (6GW)" value={player.form_points ?? '-'} accent="text-fpl-green" /></div>
-    <div class="card p-3"><StatCard label="Pts/Game" value={player.pts_per_game ?? '-'} /></div>
-    <div class="card p-3"><StatCard label="xGI/90" value={player.xgi_per_90 ?? '-'} accent="text-fpl-cyan" /></div>
-    <div class="card p-3"><StatCard label="Mins %" value={player.minutes_pct ? `${Number(player.minutes_pct).toFixed(0)}%` : '-'} /></div>
-    <div class="card p-3"><StatCard label="xG" value={player.season_xg ? Number(player.season_xg).toFixed(1) : '-'} /></div>
-    <div class="card p-3"><StatCard label="xA" value={player.season_xa ? Number(player.season_xa).toFixed(1) : '-'} /></div>
-    <div class="card p-3"><StatCard label="npxG" value={player.season_npxg ? Number(player.season_npxg).toFixed(1) : '-'} /></div>
-    <div class="card p-3"><StatCard label="Bonus" value={totalBonus} /></div>
+  <!-- Recent Form (last 6 GWs) — primary decision stats -->
+  <div class="mb-2">
+    <Tooltip text={STAT_HELP.form}><h3 class="section-title">Recent Form <span class="text-xs text-gray-400 font-normal">(last 6 gameweeks)</span></h3></Tooltip>
   </div>
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+    <div class="card p-3"><StatCard label="Points" value={player.form_points ?? '-'} accent="text-fpl-green" subtext={`${(player.form_points ?? 0) >= 30 ? 'On fire' : (player.form_points ?? 0) >= 20 ? 'Good form' : 'Quiet spell'}`} /></div>
+    <div class="card p-3"><StatCard label="Pts/Game" value={player.pts_per_game ?? '-'} help={STAT_HELP.pts_per_game} subtext={`${Number(player.pts_per_game ?? 0) >= 5 ? 'Strong returns' : 'Below average'}`} /></div>
+    <div class="card p-3"><StatCard label="Minutes" value={player.minutes_pct ? `${Number(player.minutes_pct).toFixed(0)}%` : '-'} help={STAT_HELP.minutes_pct} subtext={`${Number(player.minutes_pct ?? 0) >= 80 ? 'Nailed starter' : Number(player.minutes_pct ?? 0) >= 50 ? 'Rotation risk' : 'Bench player'}`} /></div>
+    <div class="card p-3"><StatCard label="BPS Avg" value={player.bps_avg ?? '-'} help={STAT_HELP.bps_avg} subtext={`${Number(player.bps_avg ?? 0) >= 25 ? 'Bonus magnet' : 'Occasional bonus'}`} /></div>
+    <div class="card p-3"><StatCard label="Bonus" value={totalBonus} help={STAT_HELP.bps} subtext={`Season total`} /></div>
+  </div>
+
+  <!-- Season Expected Stats (Understat) -->
+  {player.season_xg && (
+    <div class="mb-2">
+      <h3 class="section-title">Season Stats <span class="text-xs text-gray-400 font-normal">(full season from Understat)</span></h3>
+    </div>
+  )}
+  {player.season_xg && (
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div class="card p-3"><StatCard label="xG" value={Number(player.season_xg).toFixed(1)} help={STAT_HELP.xg} subtext={player.season_goals != null ? `Scored ${player.season_goals} (${player.season_goals > Number(player.season_xg) ? 'overperforming' : 'underperforming'})` : ''} /></div>
+      <div class="card p-3"><StatCard label="xA" value={player.season_xa ? Number(player.season_xa).toFixed(1) : '-'} help={STAT_HELP.xa} subtext={player.season_assists != null ? `Got ${player.season_assists} assists` : ''} /></div>
+      <div class="card p-3"><StatCard label="xGI/90" value={player.xgi_per_90 ?? '-'} accent="text-fpl-cyan" help={STAT_HELP.xgi_per_90} subtext={`${Number(player.xgi_per_90 ?? 0) >= 0.7 ? 'Elite' : Number(player.xgi_per_90 ?? 0) >= 0.4 ? 'Good' : 'Low'} attacking output`} /></div>
+      <div class="card p-3"><StatCard label="npxG" value={player.season_npxg ? Number(player.season_npxg).toFixed(1) : '-'} help={STAT_HELP.npxg} subtext="Excluding penalties" /></div>
+    </div>
+  )}
 
   <!-- Points chart (pure CSS) -->
   <div class="card p-5 mb-6">

@@ -8,6 +8,8 @@ export interface PlayerSummary {
   team_id: number;
   team_short_name: string | null;
   position: number;
+  photo_url: string | null;
+  team_badge_url: string | null;
   now_cost: number;
   status: string;
   chance_of_playing_next_round: number | null;

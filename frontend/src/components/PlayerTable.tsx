@@ -112,9 +112,24 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
                   {(p) => (
                     <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors cursor-pointer" onClick={() => window.location.href = `/players/${p.id}`}>
                       <td class="py-2.5 px-4">
-                        <a href={`/players/${p.id}`} class="text-fpl-cyan hover:underline decoration-fpl-cyan/40 underline-offset-2 font-medium" onClick={(e) => e.stopPropagation()}>
-                          {p.web_name}
-                        </a>
+                        <div class="flex items-center gap-2.5">
+                          <Show when={p.photo_url} fallback={
+                            <span class="w-9 h-9 rounded-lg bg-fpl-card shrink-0 flex items-center justify-center text-xs font-bold text-gray-500">
+                              {p.web_name.slice(0, 2)}
+                            </span>
+                          }>
+                            <img
+                              src={p.photo_url!}
+                              alt=""
+                              class="w-9 h-9 rounded-lg object-cover object-top bg-fpl-card shrink-0"
+                              loading="lazy"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          </Show>
+                          <a href={`/players/${p.id}`} class="text-fpl-cyan hover:underline decoration-fpl-cyan/40 underline-offset-2 font-medium" onClick={(e) => e.stopPropagation()}>
+                            {p.web_name}
+                          </a>
+                        </div>
                         <Show when={p.is_penalty_taker}>
                           <span class="ml-1.5 text-[10px] font-semibold text-fpl-green bg-fpl-green/10 px-1 rounded">P</span>
                         </Show>

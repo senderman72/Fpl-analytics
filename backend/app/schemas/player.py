@@ -13,6 +13,8 @@ class PlayerSummary(BaseModel):
     team_id: int
     team_short_name: str | None = None
     position: int
+    photo_url: str | None = None
+    team_badge_url: str | None = None
     now_cost: int
     status: str
     chance_of_playing_next_round: int | None

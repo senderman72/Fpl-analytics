@@ -3,6 +3,37 @@
 from pydantic import BaseModel
 
 
+class LivePlayerScore(BaseModel):
+    player_id: int
+    web_name: str
+    shirt_url: str
+    minutes: int
+    goals_scored: int
+    assists: int
+    bonus: int
+    bps: int
+    total_points: int
+
+
+class LiveFixture(BaseModel):
+    fixture_id: int
+    home_team_short: str
+    away_team_short: str
+    home_badge_url: str | None = None
+    away_badge_url: str | None = None
+    home_goals: int
+    away_goals: int
+    started: bool
+    finished: bool
+    minutes: int
+
+
+class LiveGWResponse(BaseModel):
+    gameweek_id: int
+    fixtures: list[LiveFixture]
+    players: list[LivePlayerScore]
+
+
 class GameweekOut(BaseModel):
     id: int
     name: str

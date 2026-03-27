@@ -176,6 +176,37 @@ export interface FixtureOut {
   away_difficulty: number | null;
 }
 
+export interface LivePlayerScore {
+  player_id: number;
+  web_name: string;
+  shirt_url: string;
+  minutes: number;
+  goals_scored: number;
+  assists: number;
+  bonus: number;
+  bps: number;
+  total_points: number;
+}
+
+export interface LiveFixture {
+  fixture_id: number;
+  home_team_short: string;
+  away_team_short: string;
+  home_badge_url: string | null;
+  away_badge_url: string | null;
+  home_goals: number;
+  away_goals: number;
+  started: boolean;
+  finished: boolean;
+  minutes: number;
+}
+
+export interface LiveGWResponse {
+  gameweek_id: number;
+  fixtures: LiveFixture[];
+  players: LivePlayerScore[];
+}
+
 export const POSITIONS: Record<number, string> = {
   1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD',
 };

@@ -1,5 +1,7 @@
 """Gameweek and fixture endpoints."""
 
+import logging
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,9 +9,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_session
 from app.models.fixture import Fixture
 from app.models.gameweek import Gameweek
+from app.models.player import Player
 from app.models.team import Team
 from app.schemas.common import APIResponse
-from app.schemas.gameweek import FixtureOut, GameweekOut
+from app.schemas.gameweek import (
+    FixtureOut,
+    GameweekOut,
+    LiveFixture,
+    LiveGWResponse,
+    LivePlayerScore,
+)
+from app.services.fpl_client import fetch_live_gw
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["gameweeks"])
 
@@ -86,4 +98,92 @@ async def list_fixtures(
             )
             for f in fixtures
         ]
+    )
+
+
+FPL_SHIRTS = "https://fantasy.premierleague.com/dist/img/shirts/standard"
+
+
+def _shirt_url(team_code: int, position: int) -> str:
+    if position == 1:
+        return f"{FPL_SHIRTS}/shirt_{team_code}_1-110.webp"
+    return f"{FPL_SHIRTS}/shirt_{team_code}-110.webp"
+
+
+@router.get("/live/{gw_id}", response_model=APIResponse[LiveGWResponse])
+async def get_live_gw(
+    gw_id: int,
+    session: AsyncSession = Depends(get_session),
+) -> APIResponse[LiveGWResponse]:
+    """Fetch live scores for an active gameweek from the FPL API."""
+    teams_result = await session.execute(select(Team.id, Team.short_name, Team.code))
+    team_map = {tid: (sn, code) for tid, sn, code in teams_result.all()}
+
+    players_result = await session.execute(
+        select(Player.id, Player.web_name, Player.team_id, Player.position)
+    )
+    player_map = {pid: (wn, tid, pos) for pid, wn, tid, pos in players_result.all()}
+
+    # Fixtures from DB
+    fix_result = await session.execute(
+        select(Fixture).where(Fixture.gameweek_id == gw_id)
+    )
+    db_fixtures = fix_result.scalars().all()
+
+    pl_cdn = "https://resources.premierleague.com/premierleague"
+    fixtures = []
+    for f in db_fixtures:
+        home_info = team_map.get(f.home_team_id, ("???", 0))
+        away_info = team_map.get(f.away_team_id, ("???", 0))
+        elapsed = 90 if f.finished else 0 if not f.started else 45
+        fixtures.append(
+            LiveFixture(
+                fixture_id=f.id,
+                home_team_short=home_info[0],
+                away_team_short=away_info[0],
+                home_badge_url=f"{pl_cdn}/badges/100/t{home_info[1]}.png" if home_info[1] else None,
+                away_badge_url=f"{pl_cdn}/badges/100/t{away_info[1]}.png" if away_info[1] else None,
+                home_goals=f.home_goals or 0,
+                away_goals=f.away_goals or 0,
+                started=f.started,
+                finished=f.finished,
+                minutes=elapsed,
+            )
+        )
+
+    # Live player data from FPL API
+    players: list[LivePlayerScore] = []
+    try:
+        live_data = await fetch_live_gw(gw_id)
+        for elem in live_data.get("elements", []):
+            pid = elem["id"]
+            stats = elem.get("stats", {})
+            p_info = player_map.get(pid)
+            if not p_info:
+                continue
+            web_name, team_id, position = p_info
+            t_info = team_map.get(team_id, ("???", 0))
+            total_pts = stats.get("total_points", 0)
+            if stats.get("minutes", 0) == 0 and total_pts == 0:
+                continue
+            players.append(
+                LivePlayerScore(
+                    player_id=pid,
+                    web_name=web_name,
+                    shirt_url=_shirt_url(t_info[1], position),
+                    minutes=stats.get("minutes", 0),
+                    goals_scored=stats.get("goals_scored", 0),
+                    assists=stats.get("assists", 0),
+                    bonus=stats.get("bonus", 0),
+                    bps=stats.get("bps", 0),
+                    total_points=total_pts,
+                )
+            )
+    except Exception:
+        logger.warning("Failed to fetch live GW %d from FPL API", gw_id, exc_info=True)
+
+    players.sort(key=lambda p: p.total_points, reverse=True)
+
+    return APIResponse(
+        data=LiveGWResponse(gameweek_id=gw_id, fixtures=fixtures, players=players)
     )

@@ -4,6 +4,9 @@ import PositionBadge from '../../components/PositionBadge.astro';
 import StatCard from '../../components/StatCard.astro';
 import FdrStrip from '../../components/FdrStrip.astro';
 import Tooltip from '../../components/Tooltip.astro';
+import PointsChart from '../../components/PointsChart';
+import XGIChart from '../../components/XGIChart';
+import PriceChart from '../../components/PriceChart';
 import { getPlayer, getPlayerHistory, getPlayerFixtures } from '../../api/players';
 import { POSITIONS, formatCost } from '../../lib/types';
 import { STAT_HELP } from '../../lib/explanations';
@@ -102,36 +105,14 @@ const maxPoints = Math.max(...history.map(h => h.total_points), 1);
     <!-- Expected vs Actual -->
     {player.season_xg && player.season_goals != null && (
       <div class="card p-5">
-        <Tooltip text={STAT_HELP.xg}><h3 class="section-title mb-3">Expected vs Actual</h3></Tooltip>
-        <div class="space-y-3">
-          <div>
-            <div class="flex justify-between text-xs mb-1">
-              <span class="text-gray-400">Goals: {player.season_goals} scored from {Number(player.season_xg).toFixed(1)} xG</span>
-              <span class:list={[player.season_goals > Number(player.season_xg) ? 'text-fpl-green' : 'text-fpl-pink']}>
-                {player.season_goals > Number(player.season_xg) ? 'Overperforming' : 'Underperforming'}
-              </span>
-            </div>
-            <div class="flex gap-1 h-4">
-              <div class="bg-fpl-green/60 rounded-sm" style={`width: ${Math.min(100, (player.season_goals / Math.max(Number(player.season_xg), player.season_goals, 1)) * 100)}%`} title={`${player.season_goals} goals`}></div>
-              <div class="bg-fpl-cyan/30 rounded-sm" style={`width: ${Math.min(100, (Number(player.season_xg) / Math.max(Number(player.season_xg), player.season_goals, 1)) * 100)}%`} title={`${Number(player.season_xg).toFixed(1)} xG`}></div>
-            </div>
-            <div class="flex gap-3 text-[10px] text-gray-500 mt-1">
-              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-fpl-green/60"></span>Actual</span>
-              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-fpl-cyan/30"></span>Expected</span>
-            </div>
-          </div>
-          {player.season_assists != null && player.season_xa && (
-            <div>
-              <div class="flex justify-between text-xs mb-1">
-                <span class="text-gray-400">Assists: {player.season_assists} from {Number(player.season_xa).toFixed(1)} xA</span>
-              </div>
-              <div class="flex gap-1 h-4">
-                <div class="bg-fpl-green/60 rounded-sm" style={`width: ${Math.min(100, (player.season_assists / Math.max(Number(player.season_xa), player.season_assists, 1)) * 100)}%`}></div>
-                <div class="bg-fpl-cyan/30 rounded-sm" style={`width: ${Math.min(100, (Number(player.season_xa) / Math.max(Number(player.season_xa), player.season_assists, 1)) * 100)}%`}></div>
-              </div>
-            </div>
-          )}
-        </div>
+        <Tooltip text={STAT_HELP.xg}><h3 class="section-title mb-2">Expected vs Actual</h3></Tooltip>
+        <XGIChart
+          client:only="solid-js"
+          goals={player.season_goals}
+          xg={Number(player.season_xg)}
+          assists={player.season_assists ?? 0}
+          xa={Number(player.season_xa ?? 0)}
+        />
       </div>
     )}
   </div>
@@ -163,35 +144,19 @@ const maxPoints = Math.max(...history.map(h => h.total_points), 1);
     </div>
   )}
 
-  <!-- Points chart (pure CSS) -->
+  <!-- Points chart -->
   <div class="card p-5 mb-6">
-    <h3 class="section-title mb-4">Points by Gameweek</h3>
-    <div class="flex items-end gap-[2px] h-32">
-      {history.map((h) => {
-        const height = maxPoints > 0 ? (h.total_points / maxPoints) * 100 : 0;
-        const isHighScore = h.total_points >= 10;
-        return (
-          <div class="flex-1 flex flex-col items-center justify-end group relative" title={`GW${h.gameweek_id}: ${h.total_points} pts`}>
-            <div
-              class:list={[
-                'w-full rounded-t-sm transition-all',
-                isHighScore ? 'bg-fpl-green' : h.total_points > 0 ? 'bg-fpl-cyan/60' : 'bg-gray-700/40',
-                'group-hover:opacity-80',
-              ]}
-              style={`height: ${Math.max(height, 2)}%`}
-            />
-            <div class="absolute -top-5 text-[9px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
-              {h.total_points}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
-      <span>GW1</span>
-      <span>GW{history.length}</span>
-    </div>
+    <h3 class="section-title mb-2">Points by Gameweek</h3>
+    <PointsChart client:only="solid-js" history={JSON.stringify(history)} />
   </div>
+
+  <!-- Price history -->
+  {history.length > 1 && (
+    <div class="card p-5 mb-6">
+      <h3 class="section-title mb-2">Price History</h3>
+      <PriceChart client:only="solid-js" history={JSON.stringify(history)} />
+    </div>
+  )}
 
   <!-- Fixtures -->
   {fixtures.length > 0 && (

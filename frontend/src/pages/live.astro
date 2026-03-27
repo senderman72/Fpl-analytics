@@ -1,0 +1,22 @@
+---
+import Layout from '../layouts/Layout.astro';
+import LiveTracker from '../components/LiveTracker';
+import { getGameweeks } from '../api/gameweeks';
+
+const gameweeks = await getGameweeks();
+const currentGW = gameweeks.find(gw => gw.is_current);
+const lastFinished = gameweeks.filter(gw => gw.is_finished).sort((a, b) => b.id - a.id)[0];
+const gwToShow = currentGW ?? lastFinished;
+---
+
+<Layout title="Live">
+  <div class="mb-6">
+    <h1 class="page-title">Live Scores</h1>
+  </div>
+
+  {gwToShow ? (
+    <LiveTracker client:only="solid-js" currentGwId={gwToShow.id} />
+  ) : (
+    <div class="card p-8 text-center text-gray-400">No gameweek data available.</div>
+  )}
+</Layout>

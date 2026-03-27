@@ -22,9 +22,17 @@ from app.models.team import Team
 
 logger = logging.getLogger(__name__)
 
+FPL_SHIRTS = "https://fantasy.premierleague.com/dist/img/shirts/standard"
+
 # Module-level model cache
 _model: Ridge | None = None
 _scaler: StandardScaler | None = None
+
+
+def _shirt_url(team_code: int, position: int) -> str:
+    if position == 1:  # GK
+        return f"{FPL_SHIRTS}/shirt_{team_code}_1-110.webp"
+    return f"{FPL_SHIRTS}/shirt_{team_code}-110.webp"
 
 
 def train_model() -> tuple[Ridge, StandardScaler]:
@@ -136,7 +144,7 @@ def predict_gw(gw_id: int) -> list[dict]:
 
     with sync_session_factory() as session:
         players_data = (
-            session.query(Player, Team.short_name, PlayerFormCache)
+            session.query(Player, Team.short_name, Team.code, PlayerFormCache)
             .join(Team, Player.team_id == Team.id)
             .outerjoin(
                 PlayerFormCache,
@@ -164,7 +172,7 @@ def predict_gw(gw_id: int) -> list[dict]:
         team_fixtures.setdefault(f.away_team_id, []).append(f)
 
     predictions = []
-    for player, team_short, form in players_data:
+    for player, team_short, team_code, form in players_data:
         if not form or form.minutes_pct < 20:
             continue
 
@@ -213,9 +221,148 @@ def predict_gw(gw_id: int) -> list[dict]:
             {
                 "player_id": player.id,
                 "web_name": player.web_name,
+                "shirt_url": _shirt_url(team_code, player.position),
                 "team_short_name": team_short,
                 "position": player.position,
                 "predicted_points": round(Decimal(str(total_predicted)), 1),
+                "now_cost": player.now_cost,
+            }
+        )
+
+    predictions.sort(key=lambda p: float(p["predicted_points"]), reverse=True)
+    return predictions
+
+
+def predict_upcoming(horizon: int = 5) -> list[dict]:
+    """Predict points across the next N upcoming gameweeks (capped at remaining GWs).
+
+    Uses last-6-GW form data and fixture difficulty for each upcoming GW.
+    Returns enriched dicts with per-GW breakdowns.
+    """
+    global _model, _scaler
+
+    if _model is None or _scaler is None:
+        train_model()
+
+    if _model is None:
+        return []
+
+    with sync_session_factory() as session:
+        # Find upcoming GWs (unfinished, ordered)
+        upcoming_gws = (
+            session.query(Gameweek)
+            .filter(Gameweek.is_finished == False)  # noqa: E712
+            .order_by(Gameweek.id)
+            .limit(horizon)
+            .all()
+        )
+
+        if not upcoming_gws:
+            return []
+
+        gw_ids = [gw.id for gw in upcoming_gws]
+        gw_double_map = {gw.id: gw.is_double for gw in upcoming_gws}
+        actual_horizon = len(gw_ids)
+
+        # Player data with 6-GW form
+        players_data = (
+            session.query(Player, Team.short_name, Team.code, PlayerFormCache)
+            .join(Team, Player.team_id == Team.id)
+            .outerjoin(
+                PlayerFormCache,
+                (PlayerFormCache.player_id == Player.id)
+                & (PlayerFormCache.gw_window == 6),
+            )
+            .filter(Player.status == "a")
+            .all()
+        )
+
+        xg_data = {}
+        for xg in session.query(PlayerSeasonXG).all():
+            xg_data[xg.player_id] = xg
+
+        # Fixtures for all upcoming GWs
+        all_fixtures = (
+            session.query(Fixture)
+            .filter(Fixture.gameweek_id.in_(gw_ids))
+            .all()
+        )
+
+    # Map: gw_id -> team_id -> list[Fixture]
+    gw_team_fixtures: dict[int, dict[int, list[Fixture]]] = {}
+    for f in all_fixtures:
+        gw_map = gw_team_fixtures.setdefault(f.gameweek_id, {})
+        gw_map.setdefault(f.home_team_id, []).append(f)
+        gw_map.setdefault(f.away_team_id, []).append(f)
+
+    predictions = []
+    for player, team_short, team_code, form in players_data:
+        if not form or form.minutes_pct < 20:
+            continue
+
+        xg = xg_data.get(player.id)
+        xgi_per_90 = (
+            float(xg.xgi / (Decimal(xg.minutes) / 90)) if xg and xg.minutes > 0 else 0
+        )
+        season_xgi = float(xg.xgi) if xg else 0
+
+        total_predicted = 0.0
+        per_gw: list[dict] = []
+
+        for gw_id in gw_ids:
+            team_fixtures = gw_team_fixtures.get(gw_id, {})
+            player_fixtures = team_fixtures.get(player.team_id, [])
+            is_dgw = gw_double_map.get(gw_id, False)
+
+            gw_predicted = 0.0
+            for fix in player_fixtures:
+                is_home = fix.home_team_id == player.team_id
+                fdr = float(
+                    fix.home_difficulty if is_home else fix.away_difficulty
+                ) if fix.home_difficulty is not None else 3.0
+
+                features = np.array(
+                    [
+                        [
+                            xgi_per_90,
+                            float(form.minutes_pct) / 100,
+                            fdr,
+                            1.0 if is_home else 0.0,
+                            0.5,
+                            float(form.bps_avg),
+                            1.0 if is_dgw else 0.0,
+                            0,
+                            1.0
+                            if player.is_penalty_taker or player.is_set_piece_taker
+                            else 0,
+                            season_xgi,
+                        ]
+                    ]
+                )
+                features_scaled = _scaler.transform(features)
+                pred = max(0, float(_model.predict(features_scaled)[0]))
+                gw_predicted += pred
+
+            # Players with no fixtures in a GW (blank GW) score 0 for that GW
+            per_gw.append({
+                "gw_id": gw_id,
+                "predicted_points": round(Decimal(str(gw_predicted)), 1),
+            })
+            total_predicted += gw_predicted
+
+        if total_predicted == 0.0:
+            continue
+
+        predictions.append(
+            {
+                "player_id": player.id,
+                "web_name": player.web_name,
+                "shirt_url": _shirt_url(team_code, player.position),
+                "team_short_name": team_short,
+                "position": player.position,
+                "predicted_points": round(Decimal(str(total_predicted)), 1),
+                "predicted_per_gw": per_gw,
+                "horizon": actual_horizon,
                 "now_cost": player.now_cost,
             }
         )

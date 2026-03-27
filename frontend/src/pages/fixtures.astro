@@ -1,0 +1,151 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getGameweeks, getFixtures } from '../api/gameweeks';
+import { fdrColor } from '../lib/types';
+
+const gameweeks = await getGameweeks();
+const allGWs = gameweeks.sort((a, b) => a.id - b.id);
+
+// Determine which GW to show from ?gw= param, default to next upcoming
+const gwParam = Astro.url.searchParams.get('gw');
+const nextGW = allGWs.find(gw => gw.is_next) ?? allGWs.find(gw => !gw.is_finished);
+const currentGWId = gwParam ? parseInt(gwParam, 10) : (nextGW?.id ?? 1);
+const currentGW = allGWs.find(gw => gw.id === currentGWId);
+
+// Fetch only this GW's fixtures
+const fixtures = currentGW ? await getFixtures({ gameweek_id: currentGWId }) : [];
+
+// Prev/next GW IDs for navigation
+const prevGW = allGWs.find(gw => gw.id === currentGWId - 1);
+const nextGWNav = allGWs.find(gw => gw.id === currentGWId + 1);
+
+function formatKickoff(iso: string | null): string {
+  if (!iso) return 'TBC';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+    + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+const deadline = currentGW ? new Date(currentGW.deadline_time) : null;
+const deadlineStr = deadline
+  ? deadline.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+  : '';
+---
+
+<Layout title="Fixtures">
+  <h1 class="page-title mb-6">Fixtures</h1>
+
+  {!currentGW ? (
+    <div class="card p-8 text-center text-gray-400">No fixtures available.</div>
+  ) : (
+    <div>
+      <!-- GW header with navigation -->
+      <div class="flex items-center justify-between mb-4">
+        {prevGW ? (
+          <a
+            href={`/fixtures?gw=${prevGW.id}`}
+            class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            GW{prevGW.id}
+          </a>
+        ) : (
+          <div class="w-20" />
+        )}
+
+        <div class="text-center">
+          <div class="flex items-center justify-center gap-2">
+            <h2 class="text-lg font-bold text-white">{currentGW.name}</h2>
+            {currentGW.is_double && (
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-fpl-pink/15 text-fpl-pink border border-fpl-pink/30">DGW</span>
+            )}
+            {currentGW.is_blank && (
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-orange-500/15 text-orange-400 border border-orange-500/30">BGW</span>
+            )}
+            {currentGW.is_current && (
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-fpl-green/15 text-fpl-green border border-fpl-green/30">LIVE</span>
+            )}
+            {currentGW.is_finished && (
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-gray-500/15 text-gray-400 border border-gray-500/30">FT</span>
+            )}
+          </div>
+          <span class="text-xs text-gray-500">Deadline: {deadlineStr}</span>
+        </div>
+
+        {nextGWNav ? (
+          <a
+            href={`/fixtures?gw=${nextGWNav.id}`}
+            class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+          >
+            GW{nextGWNav.id}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        ) : (
+          <div class="w-20" />
+        )}
+      </div>
+
+      <!-- Fixtures grid -->
+      {fixtures.length === 0 ? (
+        <div class="card p-8 text-center text-gray-500 text-sm">No fixtures scheduled for this gameweek</div>
+      ) : (
+        <div class="flex flex-col gap-3 max-w-2xl mx-auto">
+          {fixtures.map(f => {
+            const homeColor = fdrColor(f.home_difficulty);
+            const awayColor = fdrColor(f.away_difficulty);
+            const isFinished = f.finished;
+            return (
+              <div class="card px-5 py-4">
+                <!-- Kickoff time -->
+                <div class="text-center mb-3">
+                  <span class="text-sm font-medium text-gray-300">{formatKickoff(f.kickoff_time)}</span>
+                </div>
+
+                <!-- Teams row -->
+                <div class="flex items-center justify-between gap-4">
+                  <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <span
+                      class="shrink-0 px-2 py-1 text-xs font-bold rounded"
+                      style={`background: ${homeColor}18; color: ${homeColor}; border: 1px solid ${homeColor}30`}
+                    >
+                      {f.home_difficulty}
+                    </span>
+                    {f.home_badge_url && (
+                      <img src={f.home_badge_url} alt={f.home_short_name ?? ''} class="w-8 h-8 shrink-0" loading="lazy" />
+                    )}
+                    <span class="font-bold text-white text-base truncate">{f.home_short_name}</span>
+                  </div>
+
+                  <div class="shrink-0 min-w-[60px] text-center">
+                    {isFinished ? (
+                      <span class="text-white font-extrabold text-xl tabular-nums">{f.home_goals} - {f.away_goals}</span>
+                    ) : (
+                      <span class="text-gray-400 font-semibold">vs</span>
+                    )}
+                  </div>
+
+                  <div class="flex items-center gap-3 flex-1 min-w-0 justify-end">
+                    <span class="font-bold text-white text-base truncate text-right">{f.away_short_name}</span>
+                    {f.away_badge_url && (
+                      <img src={f.away_badge_url} alt={f.away_short_name ?? ''} class="w-8 h-8 shrink-0" loading="lazy" />
+                    )}
+                    <span
+                      class="shrink-0 px-2 py-1 text-xs font-bold rounded"
+                      style={`background: ${awayColor}18; color: ${awayColor}; border: 1px solid ${awayColor}30`}
+                    >
+                      {f.away_difficulty}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  )}
+</Layout>

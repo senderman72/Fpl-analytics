@@ -25,12 +25,13 @@ from app.schemas.player import (
 router = APIRouter(prefix="/players", tags=["players"])
 
 PL_CDN = "https://resources.premierleague.com/premierleague"
+FPL_SHIRTS = "https://fantasy.premierleague.com/dist/img/shirts/standard"
 
 
-def _photo_url(player_code: int) -> str | None:
-    if not player_code:
-        return None
-    return f"{PL_CDN}/photos/players/110x140/p{player_code}.png"
+def _shirt_url(team_code: int, position: int) -> str:
+    if position == 1:  # GK
+        return f"{FPL_SHIRTS}/shirt_{team_code}_1-110.webp"
+    return f"{FPL_SHIRTS}/shirt_{team_code}-110.webp"
 
 
 def _badge_url(team_code: int) -> str | None:
@@ -91,7 +92,7 @@ async def list_players(
                 news=player.news,
                 is_penalty_taker=player.is_penalty_taker,
                 is_set_piece_taker=player.is_set_piece_taker,
-                photo_url=_photo_url(player.code),
+                shirt_url=_shirt_url(team_code, player.position),
                 team_badge_url=_badge_url(team_code),
                 form_points=form.total_points if form else None,
                 pts_per_game=form.pts_per_game if form else None,
@@ -175,7 +176,7 @@ async def get_player(
             news=player.news,
             is_penalty_taker=player.is_penalty_taker,
             is_set_piece_taker=player.is_set_piece_taker,
-            photo_url=_photo_url(player.code),
+            shirt_url=_shirt_url(team_code, player.position),
             team_badge_url=_badge_url(team_code),
             understat_id=player.understat_id,
             form_points=form.total_points if form else None,

@@ -16,8 +16,17 @@ from app.models.player_prices import PlayerPrice
 from app.models.team import Team
 from app.schemas.common import APIResponse
 from app.schemas.decision import BuyCandidate, CaptainPick, ChipAdvice, DifferentialPick
+from app.services.points_model import predict_upcoming
 
 router = APIRouter(prefix="/decisions", tags=["decisions"])
+
+FPL_SHIRTS = "https://fantasy.premierleague.com/dist/img/shirts/standard"
+
+
+def _shirt_url(team_code: int, position: int) -> str:
+    if position == 1:  # GK
+        return f"{FPL_SHIRTS}/shirt_{team_code}_1-110.webp"
+    return f"{FPL_SHIRTS}/shirt_{team_code}-110.webp"
 
 
 async def _get_next_gw(session: AsyncSession) -> int | None:
@@ -28,11 +37,28 @@ async def _get_next_gw(session: AsyncSession) -> int | None:
     return row[0] if row else None
 
 
-async def _get_fdr_next_5(session: AsyncSession, next_gw: int) -> dict[int, Decimal]:
+async def _get_fdr_upcoming(
+    session: AsyncSession, next_gw: int, horizon: int = 5
+) -> tuple[dict[int, Decimal], int]:
+    """Get average FDR for each team across the next N unfinished GWs.
+
+    Returns (fdr_map, actual_horizon) where actual_horizon may be < horizon
+    at end of season.
+    """
+    gw_result = await session.execute(
+        select(Gameweek.id)
+        .where(Gameweek.id >= next_gw, Gameweek.is_finished == False)  # noqa: E712
+        .order_by(Gameweek.id)
+        .limit(horizon)
+    )
+    gw_ids = [row[0] for row in gw_result.all()]
+
+    if not gw_ids:
+        return {}, 0
+
     result = await session.execute(
         select(Fixture).where(
-            Fixture.gameweek_id >= next_gw,
-            Fixture.gameweek_id <= next_gw + 4,
+            Fixture.gameweek_id.in_(gw_ids),
             Fixture.gameweek_id.isnot(None),
         )
     )
@@ -45,11 +71,12 @@ async def _get_fdr_next_5(session: AsyncSession, next_gw: int) -> dict[int, Deci
         if f.away_difficulty is not None:
             team_fdrs.setdefault(f.away_team_id, []).append(f.away_difficulty)
 
-    return {
+    fdr_map = {
         tid: Decimal(str(round(sum(fdrs) / len(fdrs), 2)))
         for tid, fdrs in team_fdrs.items()
         if fdrs
     }
+    return fdr_map, len(gw_ids)
 
 
 @router.get("/buys", response_model=APIResponse[list[BuyCandidate]])
@@ -60,7 +87,7 @@ async def get_buy_candidates(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[list[BuyCandidate]]:
     stmt = (
-        select(Player, Team.short_name, PlayerFormCache)
+        select(Player, Team.short_name, Team.code.label("team_code"), PlayerFormCache)
         .join(Team, Player.team_id == Team.id)
         .join(
             PlayerFormCache,
@@ -77,16 +104,23 @@ async def get_buy_candidates(
     rows = result.all()
 
     next_gw = await _get_next_gw(session)
-    fdr_map = await _get_fdr_next_5(session, next_gw) if next_gw else {}
+    fdr_map, actual_horizon = (
+        await _get_fdr_upcoming(session, next_gw) if next_gw else ({}, 0)
+    )
+
+    # Get predicted points across the horizon
+    pred_list = predict_upcoming(horizon=actual_horizon or 5)
+    pred_lookup = {p["player_id"]: p["predicted_points"] for p in pred_list}
 
     candidates = []
-    for player, team_short, form in rows:
+    for player, team_short, team_code, form in rows:
         cost_m = Decimal(player.now_cost) / 10
         ppm = Decimal(form.total_points) / cost_m if cost_m > 0 else Decimal("0")
         candidates.append(
             BuyCandidate(
                 player_id=player.id,
                 web_name=player.web_name,
+                shirt_url=_shirt_url(team_code, player.position),
                 team_short_name=team_short,
                 position=player.position,
                 now_cost=player.now_cost,
@@ -96,6 +130,7 @@ async def get_buy_candidates(
                 minutes_pct=form.minutes_pct,
                 ppm=round(ppm, 2),
                 fdr_next_5=fdr_map.get(player.team_id),
+                predicted_points=pred_lookup.get(player.id),
                 selected_by_percent=player.selected_by_percent,
                 transfers_in_event=player.transfers_in_event,
                 recommendation=_buy_recommendation(
@@ -123,7 +158,7 @@ async def get_captain_picks(
     next_gw = await _get_next_gw(session)
 
     stmt = (
-        select(Player, Team.short_name, PlayerFormCache)
+        select(Player, Team.short_name, Team.code.label("team_code"), PlayerFormCache)
         .join(Team, Player.team_id == Team.id)
         .join(
             PlayerFormCache,
@@ -167,12 +202,13 @@ async def get_captain_picks(
                 }
 
     picks = []
-    for player, team_short, form in rows:
+    for player, team_short, team_code, form in rows:
         fi = next_fixtures.get(player.team_id, {})
         picks.append(
             CaptainPick(
                 player_id=player.id,
                 web_name=player.web_name,
+                shirt_url=_shirt_url(team_code, player.position),
                 team_short_name=team_short,
                 position=player.position,
                 now_cost=player.now_cost,
@@ -238,7 +274,7 @@ async def get_differentials(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[list[DifferentialPick]]:
     stmt = (
-        select(Player, Team.short_name, PlayerFormCache)
+        select(Player, Team.short_name, Team.code.label("team_code"), PlayerFormCache)
         .join(Team, Player.team_id == Team.id)
         .join(
             PlayerFormCache,
@@ -262,7 +298,7 @@ async def get_differentials(
     ownership = {pid: pct for pid, pct in prices_result.all()}
 
     picks = []
-    for player, team_short, form in rows:
+    for player, team_short, team_code, form in rows:
         own_pct = ownership.get(player.id, Decimal("0"))
         if own_pct > max_ownership:
             continue
@@ -270,6 +306,7 @@ async def get_differentials(
             DifferentialPick(
                 player_id=player.id,
                 web_name=player.web_name,
+                shirt_url=_shirt_url(team_code, player.position),
                 team_short_name=team_short,
                 position=player.position,
                 now_cost=player.now_cost,

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 class BuyCandidate(BaseModel):
     player_id: int
     web_name: str
+    shirt_url: str | None = None
     team_short_name: str
     position: int
     now_cost: int
@@ -17,6 +18,7 @@ class BuyCandidate(BaseModel):
     minutes_pct: Decimal
     ppm: Decimal
     fdr_next_5: Decimal | None = None
+    predicted_points: Decimal | None = None
     selected_by_percent: Decimal | None = None
     transfers_in_event: int | None = None
     recommendation: str = ""
@@ -25,6 +27,7 @@ class BuyCandidate(BaseModel):
 class CaptainPick(BaseModel):
     player_id: int
     web_name: str
+    shirt_url: str | None = None
     team_short_name: str
     position: int
     now_cost: int
@@ -51,6 +54,7 @@ class ChipAdvice(BaseModel):
 class DifferentialPick(BaseModel):
     player_id: int
     web_name: str
+    shirt_url: str | None = None
     team_short_name: str
     position: int
     now_cost: int
@@ -59,10 +63,18 @@ class DifferentialPick(BaseModel):
     xgi_per_90: Decimal
 
 
+class GWPrediction(BaseModel):
+    gw_id: int
+    predicted_points: Decimal
+
+
 class PredictionOut(BaseModel):
     player_id: int
     web_name: str
+    shirt_url: str | None = None
     team_short_name: str
     position: int
     predicted_points: Decimal
+    predicted_per_gw: list[GWPrediction] = []
+    horizon: int = 1
     now_cost: int

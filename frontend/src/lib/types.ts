@@ -8,7 +8,7 @@ export interface PlayerSummary {
   team_id: number;
   team_short_name: string | null;
   position: number;
-  photo_url: string | null;
+  shirt_url: string | null;
   team_badge_url: string | null;
   now_cost: number;
   status: string;
@@ -87,6 +87,7 @@ export interface GameweekOut {
 export interface BuyCandidate {
   player_id: number;
   web_name: string;
+  shirt_url: string | null;
   team_short_name: string;
   position: number;
   now_cost: number;
@@ -96,6 +97,7 @@ export interface BuyCandidate {
   minutes_pct: string;
   ppm: string;
   fdr_next_5: string | null;
+  predicted_points: string | null;
   selected_by_percent: string | null;
   transfers_in_event: number | null;
   recommendation: string;
@@ -104,6 +106,7 @@ export interface BuyCandidate {
 export interface CaptainPick {
   player_id: number;
   web_name: string;
+  shirt_url: string | null;
   team_short_name: string;
   position: number;
   now_cost: number;
@@ -129,6 +132,7 @@ export interface ChipAdvice {
 export interface DifferentialPick {
   player_id: number;
   web_name: string;
+  shirt_url: string | null;
   team_short_name: string;
   position: number;
   now_cost: number;
@@ -137,13 +141,39 @@ export interface DifferentialPick {
   xgi_per_90: string;
 }
 
+export interface GWPrediction {
+  gw_id: number;
+  predicted_points: string;
+}
+
 export interface PredictionOut {
   player_id: number;
   web_name: string;
+  shirt_url: string | null;
   team_short_name: string;
   position: number;
   predicted_points: string;
+  predicted_per_gw: GWPrediction[];
+  horizon: number;
   now_cost: number;
+}
+
+export interface FixtureOut {
+  id: number;
+  gameweek_id: number | null;
+  home_team_id: number;
+  away_team_id: number;
+  home_short_name: string | null;
+  away_short_name: string | null;
+  home_badge_url: string | null;
+  away_badge_url: string | null;
+  kickoff_time: string | null;
+  started: boolean;
+  finished: boolean;
+  home_goals: number | null;
+  away_goals: number | null;
+  home_difficulty: number | null;
+  away_difficulty: number | null;
 }
 
 export const POSITIONS: Record<number, string> = {

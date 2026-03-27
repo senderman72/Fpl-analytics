@@ -30,15 +30,9 @@ const maxPoints = Math.max(...history.map(h => h.total_points), 1);
   <!-- Hero -->
   <div class="card p-6 mb-6 bg-gradient-to-r from-fpl-purple/80 to-fpl-surface/80">
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-      <!-- Player photo + team badge -->
+      <!-- Player shirt + team badge -->
       <div class="relative shrink-0">
-        {player.photo_url ? (
-          <img src={player.photo_url} alt={player.web_name} class="w-24 h-24 md:w-28 md:h-28 rounded-xl object-cover object-top bg-fpl-card border-2 border-fpl-green/20" loading="lazy"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-        ) : null}
-        <div class:list={['w-24 h-24 md:w-28 md:h-28 rounded-xl bg-fpl-card border-2 border-fpl-green/20 items-center justify-center text-3xl font-extrabold text-fpl-green', player.photo_url ? 'hidden' : 'flex']}>
-          {player.first_name[0]}{player.second_name[0]}
-        </div>
+        <img src={player.shirt_url} alt={player.web_name} class="w-24 h-24 md:w-28 md:h-28" loading="lazy" />
         {player.team_badge_url && (
           <img src={player.team_badge_url} alt={player.team_short_name ?? ''} class="absolute -bottom-2 -right-2 w-9 h-9 drop-shadow-md" loading="lazy" />
         )}

@@ -26,14 +26,19 @@ const rest = picks.slice(3);
     {top3.map((c, i) => (
       <HeroCard rank={i + 1} accent={i === 0 ? 'border-fpl-gold' : i === 1 ? 'border-gray-400' : 'border-amber-700'}>
         <a href={`/players/${c.player_id}`} class="block">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-white font-bold text-lg">{c.web_name}</span>
-            <PositionBadge position={c.position} />
+          <div class="flex items-center gap-3 mb-3">
+            <img src={c.shirt_url} alt="" class="w-12 h-12 shrink-0" loading="lazy" />
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-white font-bold text-lg">{c.web_name}</span>
+                <PositionBadge position={c.position} />
+              </div>
+              <div class="text-xs text-gray-400">{c.team_short_name} · {formatCost(c.now_cost)}</div>
+            </div>
           </div>
-          <div class="text-xs text-gray-400 mb-3">{c.team_short_name} · {formatCost(c.now_cost)}</div>
           <div class="flex gap-4">
-            <div><div class="stat-label">Ceiling</div><div class="text-xl font-extrabold text-fpl-green">{c.ceiling_score}</div></div>
-            <div><div class="stat-label">Form</div><div class="text-xl font-extrabold text-white">{c.form_points}</div></div>
+            <div><div class="stat-label">Ceiling (10 GW)</div><div class="text-xl font-extrabold text-fpl-green">{c.ceiling_score}</div></div>
+            <div><div class="stat-label">Form (6 GW)</div><div class="text-xl font-extrabold text-white">{c.form_points}</div></div>
             <div><div class="stat-label">BPS Avg</div><div class="text-xl font-extrabold text-white">{c.bps_avg}</div></div>
           </div>
           <div class="flex gap-2 mt-3">
@@ -61,8 +66,8 @@ const rest = picks.slice(3);
             <th class="py-2.5 px-3 font-medium">#</th>
             <th class="py-2.5 px-3 font-medium">Player</th>
             <th class="py-2.5 px-3 font-medium">Pos</th>
-            <th class="py-2.5 px-3 text-right font-medium">Ceiling</th>
-            <th class="py-2.5 px-3 text-right font-medium">Form</th>
+            <th class="py-2.5 px-3 text-right font-medium">Ceil 10GW</th>
+            <th class="py-2.5 px-3 text-right font-medium">Form 6GW</th>
             <th class="py-2.5 px-3 text-right font-medium">BPS</th>
             <th class="py-2.5 px-3 text-center font-medium">Venue</th>
             <th class="py-2.5 px-3 text-center font-medium">Flags</th>
@@ -73,8 +78,13 @@ const rest = picks.slice(3);
             <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors">
               <td class="py-2 px-3 text-gray-500">{i + 4}</td>
               <td class="py-2 px-3">
-                <a href={`/players/${c.player_id}`} class="link-cyan font-medium">{c.web_name}</a>
-                <span class="text-gray-500 text-xs ml-1">{c.team_short_name}</span>
+                <a href={`/players/${c.player_id}`} class="flex items-center gap-2">
+                  <img src={c.shirt_url} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
+                  <div>
+                    <span class="link-cyan font-medium">{c.web_name}</span>
+                    <span class="text-gray-500 text-xs ml-1">{c.team_short_name}</span>
+                  </div>
+                </a>
               </td>
               <td class="py-2 px-3"><PositionBadge position={c.position} /></td>
               <td class="py-2 px-3 text-right font-semibold text-fpl-green tabular-nums">{c.ceiling_score}</td>

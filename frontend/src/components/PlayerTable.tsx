@@ -113,19 +113,12 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
                     <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors cursor-pointer" onClick={() => window.location.href = `/players/${p.id}`}>
                       <td class="py-2.5 px-4">
                         <div class="flex items-center gap-2.5">
-                          <Show when={p.photo_url} fallback={
-                            <span class="w-9 h-9 rounded-lg bg-fpl-card shrink-0 flex items-center justify-center text-xs font-bold text-gray-500">
-                              {p.web_name.slice(0, 2)}
-                            </span>
-                          }>
-                            <img
-                              src={p.photo_url!}
-                              alt=""
-                              class="w-9 h-9 rounded-lg object-cover object-top bg-fpl-card shrink-0"
-                              loading="lazy"
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                            />
-                          </Show>
+                          <img
+                            src={p.shirt_url!}
+                            alt=""
+                            class="w-9 h-9 shrink-0"
+                            loading="lazy"
+                          />
                           <a href={`/players/${p.id}`} class="text-fpl-cyan hover:underline decoration-fpl-cyan/40 underline-offset-2 font-medium" onClick={(e) => e.stopPropagation()}>
                             {p.web_name}
                           </a>

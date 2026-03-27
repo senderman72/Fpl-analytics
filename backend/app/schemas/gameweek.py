@@ -23,6 +23,8 @@ class FixtureOut(BaseModel):
     away_team_id: int
     home_short_name: str | None = None
     away_short_name: str | None = None
+    home_badge_url: str | None = None
+    away_badge_url: str | None = None
     kickoff_time: str | None
     started: bool
     finished: bool

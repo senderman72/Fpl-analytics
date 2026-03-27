@@ -12,22 +12,28 @@ const rest = buys.slice(3);
 
 <Layout title="Transfer Planner">
   <h1 class="page-title mb-1">Transfer Planner</h1>
-  <p class="text-gray-400 text-sm mb-6">Ranked by xGI/90 (40%) + Points per Million (30%) + Form (30%) - FDR penalty</p>
+  <p class="text-gray-400 text-sm mb-6">Based on last 6 GWs form + upcoming fixtures · Ranked by xGI/90 (40%) + PPM (30%) + Form (30%) - FDR penalty</p>
 
   <!-- Top 3 -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
     {top3.map((b, i) => (
       <HeroCard rank={i + 1} accent={i === 0 ? 'border-fpl-green' : 'border-fpl-cyan'}>
         <a href={`/players/${b.player_id}`} class="block">
-          <div class="flex items-center gap-2 mb-3">
-            <span class="text-white font-bold text-lg">{b.web_name}</span>
-            <PositionBadge position={b.position} />
+          <div class="flex items-center gap-3 mb-3">
+            <img src={b.shirt_url} alt="" class="w-12 h-12 shrink-0" loading="lazy" />
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-white font-bold text-lg">{b.web_name}</span>
+                <PositionBadge position={b.position} />
+              </div>
+              <div class="text-xs text-gray-400">{b.team_short_name} · {formatCost(b.now_cost)}</div>
+            </div>
           </div>
-          <div class="text-xs text-gray-400 mb-3">{b.team_short_name} · {formatCost(b.now_cost)}</div>
-          <div class="grid grid-cols-3 gap-2">
+          <div class="grid grid-cols-4 gap-2">
             <div><div class="stat-label">xGI/90</div><div class="text-lg font-extrabold text-fpl-cyan">{b.xgi_per_90}</div></div>
             <div><div class="stat-label">PPM</div><div class="text-lg font-extrabold text-white">{b.ppm}</div></div>
-            <div><div class="stat-label">Form</div><div class="text-lg font-extrabold text-fpl-green">{b.form_points}</div></div>
+            <div><div class="stat-label">Form (6 GW)</div><div class="text-lg font-extrabold text-fpl-green">{b.form_points}</div></div>
+            <div><div class="stat-label">Predicted</div><div class="text-lg font-extrabold text-fpl-gold">{b.predicted_points ?? '-'}</div></div>
           </div>
           {b.recommendation && (
             <div class="mt-2 text-xs text-gray-300 leading-relaxed">{b.recommendation}</div>
@@ -47,12 +53,13 @@ const rest = buys.slice(3);
             <th class="py-2.5 px-3 font-medium">Player</th>
             <th class="py-2.5 px-3 font-medium">Pos</th>
             <th class="py-2.5 px-3 text-right font-medium">Price</th>
-            <th class="py-2.5 px-3 text-right font-medium">Form</th>
+            <th class="py-2.5 px-3 text-right font-medium">Form 6GW</th>
             <th class="py-2.5 px-3 text-right font-medium">Pts/G</th>
             <th class="py-2.5 px-3 text-right font-medium">xGI/90</th>
             <th class="py-2.5 px-3 text-right font-medium">PPM</th>
             <th class="py-2.5 px-3 text-right font-medium">Mins</th>
-            <th class="py-2.5 px-3 text-right font-medium">FDR 5</th>
+            <th class="py-2.5 px-3 text-right font-medium">FDR</th>
+            <th class="py-2.5 px-3 text-right font-medium">Predicted</th>
           </tr>
         </thead>
         <tbody>
@@ -60,8 +67,13 @@ const rest = buys.slice(3);
             <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors">
               <td class="py-2 px-3 text-gray-500">{i + 4}</td>
               <td class="py-2 px-3">
-                <a href={`/players/${b.player_id}`} class="link-cyan font-medium">{b.web_name}</a>
-                <span class="text-gray-500 text-xs ml-1">{b.team_short_name}</span>
+                <a href={`/players/${b.player_id}`} class="flex items-center gap-2">
+                  <img src={b.shirt_url} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
+                  <div>
+                    <span class="link-cyan font-medium">{b.web_name}</span>
+                    <span class="text-gray-500 text-xs ml-1">{b.team_short_name}</span>
+                  </div>
+                </a>
               </td>
               <td class="py-2 px-3"><PositionBadge position={b.position} /></td>
               <td class="py-2 px-3 text-right tabular-nums">{formatCost(b.now_cost)}</td>
@@ -71,6 +83,9 @@ const rest = buys.slice(3);
               <td class="py-2 px-3 text-right tabular-nums">{b.ppm}</td>
               <td class="py-2 px-3 text-right tabular-nums">{Number(b.minutes_pct).toFixed(0)}%</td>
               <td class="py-2 px-3 text-right tabular-nums">{b.fdr_next_5 ?? '-'}</td>
+              <td class="py-2 px-3 text-right">
+                <span class="font-semibold text-fpl-gold tabular-nums">{b.predicted_points ?? '-'}</span>
+              </td>
             </tr>
           ))}
         </tbody>

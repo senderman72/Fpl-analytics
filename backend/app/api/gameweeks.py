@@ -60,8 +60,10 @@ async def list_fixtures(
     result = await session.execute(stmt)
     fixtures = result.scalars().all()
 
-    teams_result = await session.execute(select(Team.id, Team.short_name))
-    team_names = {tid: sn for tid, sn in teams_result.all()}
+    teams_result = await session.execute(select(Team.id, Team.short_name, Team.code))
+    team_info = {tid: (sn, code) for tid, sn, code in teams_result.all()}
+
+    pl_cdn = "https://resources.premierleague.com/premierleague"
 
     return APIResponse(
         data=[
@@ -70,8 +72,10 @@ async def list_fixtures(
                 gameweek_id=f.gameweek_id,
                 home_team_id=f.home_team_id,
                 away_team_id=f.away_team_id,
-                home_short_name=team_names.get(f.home_team_id),
-                away_short_name=team_names.get(f.away_team_id),
+                home_short_name=team_info.get(f.home_team_id, (None, None))[0],
+                away_short_name=team_info.get(f.away_team_id, (None, None))[0],
+                home_badge_url=f"{pl_cdn}/badges/100/t{team_info[f.home_team_id][1]}.png" if f.home_team_id in team_info and team_info[f.home_team_id][1] else None,
+                away_badge_url=f"{pl_cdn}/badges/100/t{team_info[f.away_team_id][1]}.png" if f.away_team_id in team_info and team_info[f.away_team_id][1] else None,
                 kickoff_time=f.kickoff_time.isoformat() if f.kickoff_time else None,
                 started=f.started,
                 finished=f.finished,

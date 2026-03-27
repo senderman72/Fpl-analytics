@@ -15,7 +15,14 @@ from app.models.player_gw_stats import PlayerGWStats
 from app.models.player_prices import PlayerPrice
 from app.models.team import Team
 from app.schemas.common import APIResponse
-from app.schemas.decision import BuyCandidate, CaptainPick, ChipAdvice, DifferentialPick
+from app.schemas.decision import (
+    BuyCandidate,
+    CaptainPick,
+    ChipAdvice,
+    DifferentialPick,
+    PriceChangeCandidate,
+    PriceChangePrediction,
+)
 from app.services.points_model import predict_upcoming
 
 router = APIRouter(prefix="/decisions", tags=["decisions"])
@@ -318,6 +325,60 @@ async def get_differentials(
 
     picks.sort(key=lambda p: float(p.xgi_per_90), reverse=True)
     return APIResponse(data=picks[:limit])
+
+
+@router.get("/price-changes", response_model=APIResponse[PriceChangePrediction])
+async def get_price_changes(
+    session: AsyncSession = Depends(get_session),
+) -> APIResponse[PriceChangePrediction]:
+    """Predict which players are likely to rise or fall in price tonight."""
+    stmt = select(Player, Team.short_name, Team.code.label("team_code")).join(
+        Team, Player.team_id == Team.id
+    )
+    result = await session.execute(stmt)
+    rows = result.all()
+
+    risers: list[PriceChangeCandidate] = []
+    fallers: list[PriceChangeCandidate] = []
+
+    for player, team_short, team_code in rows:
+        net = player.transfers_in_event - player.transfers_out_event
+        abs_net = abs(net)
+
+        if abs_net < 30_000:
+            continue
+
+        if abs_net >= 80_000:
+            likelihood = "very_likely"
+        elif abs_net >= 50_000:
+            likelihood = "likely"
+        else:
+            likelihood = "possible"
+
+        candidate = PriceChangeCandidate(
+            player_id=player.id,
+            web_name=player.web_name,
+            shirt_url=_shirt_url(team_code, player.position),
+            team_short_name=team_short,
+            position=player.position,
+            now_cost=player.now_cost,
+            selected_by_percent=player.selected_by_percent,
+            transfers_in_event=player.transfers_in_event,
+            transfers_out_event=player.transfers_out_event,
+            net_transfers=net,
+            cost_change_event=player.cost_change_event,
+            likelihood=likelihood,
+        )
+
+        if net > 0:
+            risers.append(candidate)
+        else:
+            fallers.append(candidate)
+
+    risers.sort(key=lambda c: c.net_transfers, reverse=True)
+    fallers.sort(key=lambda c: c.net_transfers)
+
+    return APIResponse(data=PriceChangePrediction(risers=risers, fallers=fallers))
 
 
 def _buy_recommendation(

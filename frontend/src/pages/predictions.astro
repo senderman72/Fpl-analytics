@@ -89,7 +89,7 @@ const perGwIds = predictions[0]?.predicted_per_gw?.map(g => g.gw_id) ?? [];
             <div class="flex gap-1.5 justify-center">
               {p.predicted_per_gw.map(gw => (
                 <div class="text-center">
-                  <div class="text-[10px] text-gray-500">GW{gw.gw_id}</div>
+                  <div class="text-[11px] text-gray-500">GW{gw.gw_id}</div>
                   <div class="text-xs font-semibold text-gray-300">{gw.predicted_points}</div>
                 </div>
               ))}

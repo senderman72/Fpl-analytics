@@ -37,19 +37,19 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
           <input
             type="text"
             placeholder="Search player..."
-            class="bg-fpl-card border border-gray-600 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-gray-500 w-52 focus:border-fpl-cyan focus:outline-none transition-colors"
+            class="bg-fpl-card border border-gray-600 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-500 w-full sm:w-52 focus:border-fpl-cyan focus:outline-none transition-colors"
             onInput={(e) => setSearch(e.currentTarget.value)}
           />
         </div>
 
         <div class="flex gap-1">
           <button
-            class={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${!position() ? 'bg-fpl-green/15 text-fpl-green ring-1 ring-fpl-green/30' : 'bg-fpl-card text-gray-400 hover:text-white'}`}
+            class={`px-4 py-2.5 rounded-full text-xs font-medium transition-all ${!position() ? 'bg-fpl-green/15 text-fpl-green ring-1 ring-fpl-green/30' : 'bg-fpl-card text-gray-400 hover:text-white'}`}
             onClick={() => setPosition(undefined)}
           >All</button>
           {[1, 2, 3, 4].map((pos) => (
             <button
-              class={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${position() === pos ? `${BADGE_CLASSES[pos]} ring-1 ring-current` : 'bg-fpl-card text-gray-400 hover:text-white'}`}
+              class={`px-4 py-2.5 rounded-full text-xs font-medium transition-all ${position() === pos ? `${BADGE_CLASSES[pos]} ring-1 ring-current` : 'bg-fpl-card text-gray-400 hover:text-white'}`}
               onClick={() => setPosition(pos)}
             >{POSITIONS[pos]}</button>
           ))}
@@ -124,13 +124,13 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
                           </a>
                         </div>
                         <Show when={p.is_penalty_taker}>
-                          <span class="ml-1.5 text-[10px] font-semibold text-fpl-green bg-fpl-green/10 px-1 rounded">P</span>
+                          <span class="ml-1.5 text-[11px] font-semibold text-fpl-green bg-fpl-green/10 px-1 rounded">P</span>
                         </Show>
                         <Show when={p.is_set_piece_taker}>
-                          <span class="ml-1 text-[10px] font-semibold text-fpl-cyan bg-fpl-cyan/10 px-1 rounded">SP</span>
+                          <span class="ml-1 text-[11px] font-semibold text-fpl-cyan bg-fpl-cyan/10 px-1 rounded">SP</span>
                         </Show>
                         <Show when={p.news}>
-                          <span class="ml-1.5 text-[10px] text-fpl-pink" title={p.news || ''}>!</span>
+                          <span class="ml-1.5 text-[11px] text-fpl-pink" title={p.news || ''}>!</span>
                         </Show>
                       </td>
                       <td class="py-2.5 px-3 text-gray-400">{p.team_short_name}</td>

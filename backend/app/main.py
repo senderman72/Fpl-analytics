@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
     # --- Routers ---
     from app.api.decisions import router as decisions_router
     from app.api.gameweeks import router as gameweeks_router
+    from app.api.my_team import router as my_team_router
     from app.api.players import router as players_router
     from app.api.predictions import router as predictions_router
 
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(gameweeks_router)
     app.include_router(decisions_router)
     app.include_router(predictions_router)
+    app.include_router(my_team_router)
 
     @app.get("/health")
     async def health_check() -> dict[str, str]:

@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
 import PositionBadge from '../../components/PositionBadge.astro';
 import StatCard from '../../components/StatCard.astro';
 import FdrStrip from '../../components/FdrStrip.astro';
@@ -30,6 +31,7 @@ const maxPoints = Math.max(...history.map(h => h.total_points), 1);
 ---
 
 <Layout title={player.web_name}>
+  <Breadcrumb items={[{ label: 'Players', href: '/players' }, { label: player.web_name }]} />
   <!-- Hero -->
   <div class="card p-6 mb-6 bg-gradient-to-r from-fpl-purple/80 to-fpl-surface/80">
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -48,23 +50,23 @@ const maxPoints = Math.max(...history.map(h => h.total_points), 1);
           <span class="text-fpl-cyan font-semibold">{player.team_short_name}</span>
           <PositionBadge position={player.position} />
           <span class="text-gray-300">{formatCost(player.now_cost)}</span>
-          {player.is_penalty_taker && <span class="text-[10px] font-semibold text-fpl-green bg-fpl-green/10 px-1.5 py-0.5 rounded">PEN</span>}
-          {player.is_set_piece_taker && <span class="text-[10px] font-semibold text-fpl-cyan bg-fpl-cyan/10 px-1.5 py-0.5 rounded">SET PIECE</span>}
+          {player.is_penalty_taker && <span class="text-[11px] font-semibold text-fpl-green bg-fpl-green/10 px-1.5 py-0.5 rounded">PEN</span>}
+          {player.is_set_piece_taker && <span class="text-[11px] font-semibold text-fpl-cyan bg-fpl-cyan/10 px-1.5 py-0.5 rounded">SET PIECE</span>}
         </div>
         {player.news && <div class="text-fpl-pink text-sm mt-1">{player.news}</div>}
       </div>
       <div class="flex gap-6 sm:gap-8">
         <div class="text-center">
           <div class="text-3xl font-extrabold text-fpl-green">{totalPoints}</div>
-          <div class="text-[10px] text-gray-400 uppercase tracking-wider">Points</div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Points</div>
         </div>
         <div class="text-center">
           <div class="text-3xl font-extrabold text-white">{totalGoals}</div>
-          <div class="text-[10px] text-gray-400 uppercase tracking-wider">Goals</div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Goals</div>
         </div>
         <div class="text-center">
           <div class="text-3xl font-extrabold text-white">{totalAssists}</div>
-          <div class="text-[10px] text-gray-400 uppercase tracking-wider">Assists</div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Assists</div>
         </div>
       </div>
     </div>

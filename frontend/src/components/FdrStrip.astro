@@ -16,12 +16,12 @@ const { fixtures, compact = false } = Astro.props;
       <div
         class:list={[
           'text-center rounded font-medium',
-          compact ? 'px-1 py-0.5 text-[10px] min-w-6' : 'px-2 py-1.5 text-xs min-w-10',
+          compact ? 'px-1 py-0.5 text-[11px] min-w-6' : 'px-2 py-1.5 text-xs min-w-10',
         ]}
         style={`background: ${color}18; color: ${color}; border: 1px solid ${color}30`}
         title={`GW${f.gameweek_id} vs ${f.opponent_short_name} (${f.is_home ? 'H' : 'A'})`}
       >
-        <div class={compact ? 'hidden' : 'text-[10px] text-gray-400 mb-0.5'}>GW{f.gameweek_id}</div>
+        <div class={compact ? 'hidden' : 'text-[11px] text-gray-400 mb-0.5'}>GW{f.gameweek_id}</div>
         {f.opponent_short_name}
         <span class="opacity-60">{f.is_home ? 'H' : 'A'}</span>
         {f.is_double_gw && <div class="text-[9px] text-fpl-pink font-bold">DGW</div>}

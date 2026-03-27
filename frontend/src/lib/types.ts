@@ -176,6 +176,55 @@ export interface FixtureOut {
   away_difficulty: number | null;
 }
 
+export interface PriceChangeCandidate {
+  player_id: number;
+  web_name: string;
+  shirt_url: string | null;
+  team_short_name: string;
+  position: number;
+  now_cost: number;
+  selected_by_percent: string | null;
+  transfers_in_event: number;
+  transfers_out_event: number;
+  net_transfers: number;
+  cost_change_event: number;
+  likelihood: string;
+}
+
+export interface PriceChangePrediction {
+  risers: PriceChangeCandidate[];
+  fallers: PriceChangeCandidate[];
+}
+
+export interface MyTeamPick {
+  player_id: number;
+  web_name: string;
+  shirt_url: string | null;
+  team_short_name: string;
+  position: number;
+  slot: number;
+  is_captain: boolean;
+  is_vice_captain: boolean;
+  multiplier: number;
+  now_cost: number;
+  form_points: number | null;
+  predicted_points: string | null;
+  fixtures: { opponent: string; difficulty: number; is_home: boolean }[];
+}
+
+export interface MyTeamResponse {
+  manager_name: string;
+  team_name: string;
+  overall_rank: number;
+  overall_points: number;
+  gameweek_points: number;
+  bank: number;
+  team_value: number;
+  starting: MyTeamPick[];
+  bench: MyTeamPick[];
+  total_predicted: string;
+}
+
 export interface LivePlayerScore {
   player_id: number;
   web_name: string;

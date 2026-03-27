@@ -41,3 +41,22 @@ async def fetch_player_summary(player_id: int) -> dict[str, Any]:
         resp = await client.get(f"{BASE_URL}/element-summary/{player_id}/", timeout=30)
         resp.raise_for_status()
         return resp.json()
+
+
+async def fetch_manager_info(manager_id: int) -> dict[str, Any]:
+    """Fetch /entry/{manager_id}/ — manager profile, rank, points."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f"{BASE_URL}/entry/{manager_id}/", timeout=30)
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def fetch_manager_picks(manager_id: int, gw: int) -> dict[str, Any]:
+    """Fetch /entry/{manager_id}/event/{gw}/picks/ — squad picks for a GW."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{BASE_URL}/entry/{manager_id}/event/{gw}/picks/",
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()

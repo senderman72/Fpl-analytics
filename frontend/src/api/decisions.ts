@@ -1,5 +1,5 @@
 import { get } from './client';
-import type { BuyCandidate, CaptainPick, ChipAdvice, DifferentialPick } from '../lib/types';
+import type { BuyCandidate, CaptainPick, ChipAdvice, DifferentialPick, PriceChangePrediction } from '../lib/types';
 
 export function getBuyCandidates(params?: {
   position?: number;
@@ -22,4 +22,8 @@ export function getDifferentials(params?: {
   limit?: number;
 }) {
   return get<DifferentialPick[]>('/decisions/differentials', params);
+}
+
+export function getPriceChanges() {
+  return get<PriceChangePrediction>('/decisions/price-changes');
 }

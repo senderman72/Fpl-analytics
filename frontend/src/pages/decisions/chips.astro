@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
 import Tooltip from '../../components/Tooltip.astro';
 import { getChipAdvice } from '../../api/decisions';
 import { STAT_HELP } from '../../lib/explanations';
@@ -9,6 +10,7 @@ const hasRecommendation = chips.some(gw => gw.recommendation);
 ---
 
 <Layout title="Chip Advisor">
+  <Breadcrumb items={[{ label: 'Tools' }, { label: 'Chips' }]} />
   <h1 class="page-title mb-1">Chip Advisor</h1>
   <p class="text-gray-400 text-sm mb-6">Plan when to use your chips for maximum impact</p>
 
@@ -58,18 +60,18 @@ const hasRecommendation = chips.some(gw => gw.recommendation);
 
         {gw.is_double && (
           <div class="mt-2">
-            <span class="text-[10px] font-extrabold text-fpl-green bg-fpl-green/15 px-2.5 py-1 rounded-full">DGW</span>
-            <div class="text-[10px] text-gray-300 mt-1.5 leading-tight">BB / TC</div>
+            <span class="text-[11px] font-extrabold text-fpl-green bg-fpl-green/15 px-2.5 py-1 rounded-full">DGW</span>
+            <div class="text-[11px] text-gray-300 mt-1.5 leading-tight">BB / TC</div>
           </div>
         )}
         {gw.is_blank && (
           <div class="mt-2">
-            <span class="text-[10px] font-extrabold text-fpl-pink bg-fpl-pink/15 px-2.5 py-1 rounded-full">BGW</span>
-            <div class="text-[10px] text-gray-300 mt-1.5 leading-tight">Free Hit</div>
+            <span class="text-[11px] font-extrabold text-fpl-pink bg-fpl-pink/15 px-2.5 py-1 rounded-full">BGW</span>
+            <div class="text-[11px] text-gray-300 mt-1.5 leading-tight">Free Hit</div>
           </div>
         )}
         {!gw.is_double && !gw.is_blank && (
-          <div class="mt-1 text-[10px] text-gray-600">Normal</div>
+          <div class="mt-1 text-[11px] text-gray-600">Normal</div>
         )}
       </div>
     ))}

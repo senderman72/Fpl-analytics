@@ -146,7 +146,7 @@ export default function LiveTracker(props: { currentGwId: number }) {
                             {f.home_goals} - {f.away_goals}
                           </span>
                         </Show>
-                        <div class="text-[10px] mt-0.5">
+                        <div class="text-[11px] mt-0.5">
                           {f.finished
                             ? <span class="text-gray-500">FT</span>
                             : f.started

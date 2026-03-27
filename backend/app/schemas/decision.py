@@ -63,6 +63,26 @@ class DifferentialPick(BaseModel):
     xgi_per_90: Decimal
 
 
+class PriceChangeCandidate(BaseModel):
+    player_id: int
+    web_name: str
+    shirt_url: str | None = None
+    team_short_name: str
+    position: int
+    now_cost: int
+    selected_by_percent: Decimal | None = None
+    transfers_in_event: int
+    transfers_out_event: int
+    net_transfers: int
+    cost_change_event: int
+    likelihood: str  # "very_likely", "likely", "possible"
+
+
+class PriceChangePrediction(BaseModel):
+    risers: list[PriceChangeCandidate]
+    fallers: list[PriceChangeCandidate]
+
+
 class GWPrediction(BaseModel):
     gw_id: int
     predicted_points: Decimal

@@ -36,12 +36,30 @@ def _shirt_url(team_code: int, position: int) -> str:
 
 
 def train_model() -> tuple[Ridge, StandardScaler]:
-    """Train (or retrain) the ridge regression model on all historical GW data."""
+    """Train the ridge regression model on the last 6 gameweeks of data."""
     global _model, _scaler
 
     with sync_session_factory() as session:
-        # Get all GW stats with form and xG data
-        stats = session.query(PlayerGWStats).filter(PlayerGWStats.minutes > 0).all()
+        # Find the last 6 finished GWs
+        finished_gws = (
+            session.query(Gameweek.id)
+            .filter(Gameweek.is_finished == True)  # noqa: E712
+            .order_by(Gameweek.id.desc())
+            .limit(6)
+            .all()
+        )
+        recent_gw_ids = [gw[0] for gw in finished_gws]
+
+        if not recent_gw_ids:
+            logger.warning("No finished GWs, skipping model fit")
+            return Ridge(), StandardScaler()
+
+        # Train only on last 6 GWs
+        stats = (
+            session.query(PlayerGWStats)
+            .filter(PlayerGWStats.minutes > 0, PlayerGWStats.gameweek_id.in_(recent_gw_ids))
+            .all()
+        )
 
         form_cache = {}
         for fc in (
@@ -125,8 +143,9 @@ def train_model() -> tuple[Ridge, StandardScaler]:
     _scaler = scaler
 
     logger.info(
-        "Points model trained on %d samples, R²=%.3f",
+        "Points model trained on %d samples from GWs %s, R²=%.3f",
         len(X_rows),
+        sorted(recent_gw_ids),
         model.score(X_scaled, y),
     )
     return model, scaler

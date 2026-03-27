@@ -59,16 +59,16 @@ const deadlineStr = deadline
           <div class="flex items-center justify-center gap-2">
             <h2 class="text-lg font-bold text-white">{currentGW.name}</h2>
             {currentGW.is_double && (
-              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-fpl-pink/15 text-fpl-pink border border-fpl-pink/30">DGW</span>
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-fpl-pink/15 text-fpl-pink border border-fpl-pink/30">DGW</span>
             )}
             {currentGW.is_blank && (
-              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-orange-500/15 text-orange-400 border border-orange-500/30">BGW</span>
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-orange-500/15 text-orange-400 border border-orange-500/30">BGW</span>
             )}
             {currentGW.is_current && (
-              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-fpl-green/15 text-fpl-green border border-fpl-green/30">LIVE</span>
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-fpl-green/15 text-fpl-green border border-fpl-green/30">LIVE</span>
             )}
             {currentGW.is_finished && (
-              <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-gray-500/15 text-gray-400 border border-gray-500/30">FT</span>
+              <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-gray-500/15 text-gray-400 border border-gray-500/30">FT</span>
             )}
           </div>
           <span class="text-xs text-gray-500">Deadline: {deadlineStr}</span>
@@ -109,7 +109,7 @@ const deadlineStr = deadline
                 <div class="flex items-center justify-between gap-4">
                   <div class="flex items-center gap-3 flex-1 min-w-0">
                     <span
-                      class="shrink-0 px-2 py-1 text-xs font-bold rounded"
+                      class="shrink-0 w-8 h-8 flex items-center justify-center text-sm font-bold rounded-lg"
                       style={`background: ${homeColor}18; color: ${homeColor}; border: 1px solid ${homeColor}30`}
                     >
                       {f.home_difficulty}
@@ -134,7 +134,7 @@ const deadlineStr = deadline
                       <img src={f.away_badge_url} alt={f.away_short_name ?? ''} class="w-8 h-8 shrink-0" loading="lazy" />
                     )}
                     <span
-                      class="shrink-0 px-2 py-1 text-xs font-bold rounded"
+                      class="shrink-0 w-8 h-8 flex items-center justify-center text-sm font-bold rounded-lg"
                       style={`background: ${awayColor}18; color: ${awayColor}; border: 1px solid ${awayColor}30`}
                     >
                       {f.away_difficulty}

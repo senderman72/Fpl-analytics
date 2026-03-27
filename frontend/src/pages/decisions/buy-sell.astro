@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
 import HeroCard from '../../components/HeroCard.astro';
 import PositionBadge from '../../components/PositionBadge.astro';
 import { getBuyCandidates } from '../../api/decisions';
@@ -11,6 +12,7 @@ const rest = buys.slice(3);
 ---
 
 <Layout title="Transfer Planner">
+  <Breadcrumb items={[{ label: 'Tools' }, { label: 'Transfers' }]} />
   <h1 class="page-title mb-1">Transfer Planner</h1>
   <p class="text-gray-400 text-sm mb-6">Based on last 6 GWs form + upcoming fixtures · Ranked by xGI/90 (40%) + PPM (30%) + Form (30%) - FDR penalty</p>
 
@@ -43,8 +45,33 @@ const rest = buys.slice(3);
     ))}
   </div>
 
-  <!-- Table -->
-  <div class="card overflow-hidden">
+  <!-- Mobile cards -->
+  <div class="md:hidden space-y-2">
+    {rest.map((b, i) => (
+      <a href={`/players/${b.player_id}`} class="card p-4 block hover:bg-white/3 transition-colors">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-gray-500 text-xs w-5 text-right shrink-0">{i + 4}</span>
+          <img src={b.shirt_url} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
+          <div class="flex-1 min-w-0">
+            <div class="text-white font-medium truncate">{b.web_name} <span class="text-gray-500 text-xs">{b.team_short_name}</span></div>
+            <div class="text-xs text-gray-400">{formatCost(b.now_cost)} · <PositionBadge position={b.position} /></div>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="text-fpl-gold font-bold">{b.predicted_points ?? '-'}</div>
+            <div class="text-[11px] text-gray-500">predicted</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 ml-8 text-center">
+          <div><div class="text-[11px] text-gray-500">Form 6GW</div><div class="text-fpl-green font-bold text-sm">{b.form_points}</div></div>
+          <div><div class="text-[11px] text-gray-500">xGI/90</div><div class="text-white font-bold text-sm">{b.xgi_per_90}</div></div>
+          <div><div class="text-[11px] text-gray-500">PPM</div><div class="text-white font-bold text-sm">{b.ppm}</div></div>
+        </div>
+      </a>
+    ))}
+  </div>
+
+  <!-- Desktop table -->
+  <div class="hidden md:block card overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="bg-fpl-card">

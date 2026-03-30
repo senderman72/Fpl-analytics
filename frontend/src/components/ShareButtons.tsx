@@ -8,24 +8,26 @@ interface Props {
 export default function ShareButtons(props: Props) {
   const [copied, setCopied] = createSignal(false);
 
+  const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
   function shareOnX() {
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(props.text)}&url=${encodeURIComponent(props.url)}`,
-      '_blank',
-      'width=550,height=420',
-    );
+    const webUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(props.text)}&url=${encodeURIComponent(props.url)}`;
+    if (isMobile()) {
+      window.open(webUrl, '_blank');
+    } else {
+      window.open(webUrl, '_blank', 'width=550,height=420');
+    }
   }
 
   function shareOnMessenger() {
-    window.open(
-      `https://www.facebook.com/dialog/send?link=${encodeURIComponent(props.url)}&app_id=0&redirect_uri=${encodeURIComponent(props.url)}`,
-      '_blank',
-      'width=550,height=420',
-    );
+    if (isMobile()) {
+      window.open(`fb-messenger://share?link=${encodeURIComponent(props.url)}`, '_blank');
+    } else {
+      window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(props.url)}&redirect_uri=${encodeURIComponent(props.url)}`, '_blank', 'width=550,height=420');
+    }
   }
 
   function shareViaSms() {
-    // Uses sms: URI scheme — works on iOS and Android
     window.location.href = `sms:?body=${encodeURIComponent(props.text + ' ' + props.url)}`;
   }
 

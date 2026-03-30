@@ -1,6 +1,6 @@
 /** SEO utilities — slugs, canonical URLs, JSON-LD schemas. */
 
-const SITE_URL = import.meta.env.PUBLIC_SITE_URL || 'https://fplanalytics.com';
+const SITE_URL = import.meta.env.PUBLIC_SITE_URL || 'https://fpl-analytics.vercel.app';
 
 /** Generate a URL-safe slug from player ID + name: "123-erling-haaland" */
 export function slugify(id: number, firstName: string, secondName: string): string {

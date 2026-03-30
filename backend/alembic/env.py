@@ -23,10 +23,6 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-# Railway internal Postgres doesn't use SSL
-_needs_ssl = "sslmode=" in _db_url or "ssl=" in _db_url
-_connect_args: dict = {} if _needs_ssl else {"ssl": False}
-
 
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
@@ -50,7 +46,6 @@ async def run_async_migrations() -> None:
     connectable = create_async_engine(
         _db_url,
         poolclass=pool.NullPool,
-        connect_args=_connect_args,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

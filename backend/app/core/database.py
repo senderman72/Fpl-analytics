@@ -33,23 +33,15 @@ def _sync_url(url: str) -> str:
 
 _is_prod = settings.is_production
 
-# Railway internal Postgres doesn't use SSL; external providers (Neon, Supabase) do.
-# If the URL already contains sslmode, respect it. Otherwise default to no SSL.
-_db_url = settings.database_url
-_needs_ssl = "sslmode=" in _db_url or "ssl=" in _db_url
-_async_connect_args: dict = {} if _needs_ssl else {"ssl": False}
-_sync_connect_args: dict = {} if _needs_ssl else {"sslmode": "disable"}
-
 # --- Async (FastAPI) ---
 engine = create_async_engine(
-    _async_url(_db_url),
+    _async_url(settings.database_url),
     echo=settings.debug,
     pool_pre_ping=True,
     pool_size=5 if _is_prod else 10,
     max_overflow=3 if _is_prod else 5,
     pool_timeout=30,
     pool_recycle=300,
-    connect_args=_async_connect_args,
 )
 
 async_session_factory = async_sessionmaker(
@@ -60,14 +52,13 @@ async_session_factory = async_sessionmaker(
 
 # --- Sync (Celery workers) ---
 sync_engine = create_engine(
-    _sync_url(_db_url),
+    _sync_url(settings.database_url),
     echo=settings.debug,
     pool_pre_ping=True,
     pool_size=3,
     max_overflow=2,
     pool_timeout=10,
     pool_recycle=300,
-    connect_args=_sync_connect_args,
 )
 
 sync_session_factory = sessionmaker(sync_engine, expire_on_commit=False)

@@ -46,20 +46,20 @@ function formatNet(n: number) {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
         </svg>
         Predicted Risers
-        <span class="text-xs text-gray-500 font-normal">({risers.length})</span>
+        <span class="text-xs text-gray-400 font-normal">({risers.length})</span>
       </h2>
       {risers.length === 0 ? (
-        <div class="card p-6 text-center text-gray-500 text-sm">No players predicted to rise tonight</div>
+        <div class="card p-6 text-center text-gray-400 text-sm">No players predicted to rise tonight</div>
       ) : (
         <div class="card overflow-hidden">
           {risers.map((p, i) => {
             const badge = likelihoodBadge(p.likelihood);
             return (
               <a href={`/players/${p.player_id}`} class="flex items-center gap-3 px-4 py-3 border-b border-gray-800/40 hover:bg-white/3 transition-colors last:border-0">
-                <span class="text-gray-500 text-xs w-5 text-right shrink-0">{i + 1}</span>
-                <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0" loading="lazy" />
+                <span class="text-gray-400 text-xs w-5 text-right shrink-0">{i + 1}</span>
+                <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0 object-contain" width="110" height="140" loading="lazy" />
                 <div class="flex-1 min-w-0">
-                  <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-500 text-xs">{p.team_short_name}</span></div>
+                  <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-400 text-xs">{p.team_short_name}</span></div>
                   <div class="text-xs text-gray-400">{formatCost(p.now_cost)} · {p.selected_by_percent}% owned</div>
                 </div>
                 <div class="text-right shrink-0">
@@ -80,20 +80,20 @@ function formatNet(n: number) {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
         Predicted Fallers
-        <span class="text-xs text-gray-500 font-normal">({fallers.length})</span>
+        <span class="text-xs text-gray-400 font-normal">({fallers.length})</span>
       </h2>
       {fallers.length === 0 ? (
-        <div class="card p-6 text-center text-gray-500 text-sm">No players predicted to fall tonight</div>
+        <div class="card p-6 text-center text-gray-400 text-sm">No players predicted to fall tonight</div>
       ) : (
         <div class="card overflow-hidden">
           {fallers.map((p, i) => {
             const badge = likelihoodBadge(p.likelihood);
             return (
               <a href={`/players/${p.player_id}`} class="flex items-center gap-3 px-4 py-3 border-b border-gray-800/40 hover:bg-white/3 transition-colors last:border-0">
-                <span class="text-gray-500 text-xs w-5 text-right shrink-0">{i + 1}</span>
-                <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0" loading="lazy" />
+                <span class="text-gray-400 text-xs w-5 text-right shrink-0">{i + 1}</span>
+                <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0 object-contain" width="110" height="140" loading="lazy" />
                 <div class="flex-1 min-w-0">
-                  <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-500 text-xs">{p.team_short_name}</span></div>
+                  <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-400 text-xs">{p.team_short_name}</span></div>
                   <div class="text-xs text-gray-400">{formatCost(p.now_cost)} · {p.selected_by_percent}% owned</div>
                 </div>
                 <div class="text-right shrink-0">

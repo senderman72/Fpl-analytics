@@ -159,8 +159,38 @@ export default function LiveTracker(props: { currentGwId: number }) {
               </For>
             </div>
 
-            {/* Top players */}
-            <div class="card overflow-hidden">
+            {/* Top players — Mobile cards */}
+            <div class="md:hidden" data-testid="live-scorers-mobile">
+              <h3 class="text-sm font-bold text-white mb-3">Top Scorers</h3>
+              <div class="space-y-2">
+                <For each={liveData().players.slice(0, 30)}>
+                  {(p, i) => (
+                    <a href={`/players/${p.player_id}`} class="card p-3 block hover:bg-white/3 transition-colors">
+                      <div class="flex items-center gap-3">
+                        <span class="text-gray-500 text-xs w-5 text-right shrink-0">{i() + 1}</span>
+                        <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0" loading="lazy" />
+                        <div class="flex-1 min-w-0">
+                          <div class="text-fpl-cyan font-medium truncate">{p.web_name}</div>
+                          <div class="flex gap-3 text-xs text-gray-400 mt-0.5">
+                            <span>{p.minutes}'</span>
+                            {p.goals_scored > 0 && <span class="text-white">{p.goals_scored}G</span>}
+                            {p.assists > 0 && <span class="text-white">{p.assists}A</span>}
+                            {p.bonus > 0 && <span>{p.bonus} bonus</span>}
+                          </div>
+                        </div>
+                        <div class="text-right shrink-0">
+                          <div class="text-fpl-green font-bold text-lg tabular-nums">{p.total_points}</div>
+                          <div class="text-[11px] text-gray-500">pts</div>
+                        </div>
+                      </div>
+                    </a>
+                  )}
+                </For>
+              </div>
+            </div>
+
+            {/* Top players — Desktop table */}
+            <div class="hidden md:block card overflow-hidden" data-testid="live-scorers-desktop">
               <h3 class="px-5 py-3 border-b border-gray-700/60 text-sm font-bold text-white">
                 Top Scorers
               </h3>

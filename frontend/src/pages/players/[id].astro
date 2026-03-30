@@ -168,8 +168,34 @@ const maxPoints = Math.max(...history.map(h => h.total_points), 1);
     </div>
   )}
 
-  <!-- GW History -->
-  <div class="card overflow-hidden">
+  <!-- GW History — Mobile cards -->
+  <div class="md:hidden" data-testid="gw-history-mobile">
+    <h3 class="section-title mb-3">Gameweek History</h3>
+    <div class="space-y-2">
+      {history.map((h) => (
+        <div class:list={[
+          'card p-3',
+          h.total_points >= 10 && 'border-l-2 border-l-fpl-green',
+        ]}>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm font-medium">GW{h.gameweek_id}</span>
+            <span class:list={['text-lg font-bold tabular-nums', h.total_points >= 10 ? 'text-fpl-green' : 'text-white']}>
+              {h.total_points} pts
+            </span>
+          </div>
+          <div class="grid grid-cols-4 gap-2 text-center">
+            <div><div class="text-[11px] text-gray-500">Mins</div><div class="text-white text-sm font-medium tabular-nums">{h.minutes}</div></div>
+            <div><div class="text-[11px] text-gray-500">Goals</div><div class="text-white text-sm font-medium tabular-nums">{h.goals_scored || '-'}</div></div>
+            <div><div class="text-[11px] text-gray-500">Assists</div><div class="text-white text-sm font-medium tabular-nums">{h.assists || '-'}</div></div>
+            <div><div class="text-[11px] text-gray-500">Bonus</div><div class="text-white text-sm font-medium tabular-nums">{h.bonus || '-'}</div></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- GW History — Desktop table -->
+  <div class="hidden md:block card overflow-hidden" data-testid="gw-history-desktop">
     <h3 class="section-title px-5 py-3 border-b border-gray-700/60">Gameweek History</h3>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">

@@ -29,7 +29,8 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
   return (
     <div>
       {/* Filters */}
-      <div class="flex flex-wrap items-center gap-3 mb-5">
+      <div class="space-y-3 mb-5">
+        {/* Search row */}
         <div class="relative">
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -37,61 +38,125 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
           <input
             type="text"
             placeholder="Search player..."
-            class="bg-fpl-card border border-gray-600 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-500 w-full sm:w-52 focus:border-fpl-cyan focus:outline-none transition-colors"
+            class="bg-fpl-card border border-gray-600 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-500 w-full focus:border-fpl-cyan focus:outline-none transition-colors"
             onInput={(e) => setSearch(e.currentTarget.value)}
           />
         </div>
 
-        <div class="flex gap-1">
-          <button
-            class={`px-4 py-2.5 rounded-full text-xs font-medium transition-all ${!position() ? 'bg-fpl-green/15 text-fpl-green ring-1 ring-fpl-green/30' : 'bg-fpl-card text-gray-400 hover:text-white'}`}
-            onClick={() => setPosition(undefined)}
-          >All</button>
-          {[1, 2, 3, 4].map((pos) => (
+        {/* Position filters + sort row */}
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex flex-wrap gap-1">
             <button
-              class={`px-4 py-2.5 rounded-full text-xs font-medium transition-all ${position() === pos ? `${BADGE_CLASSES[pos]} ring-1 ring-current` : 'bg-fpl-card text-gray-400 hover:text-white'}`}
-              onClick={() => setPosition(pos)}
-            >{POSITIONS[pos]}</button>
-          ))}
+              class={`px-3 sm:px-4 py-2 rounded-full text-xs font-medium transition-all ${!position() ? 'bg-fpl-green/15 text-fpl-green ring-1 ring-fpl-green/30' : 'bg-fpl-card text-gray-400 hover:text-white'}`}
+              onClick={() => setPosition(undefined)}
+            >All</button>
+            {[1, 2, 3, 4].map((pos) => (
+              <button
+                class={`px-3 sm:px-4 py-2 rounded-full text-xs font-medium transition-all ${position() === pos ? `${BADGE_CLASSES[pos]} ring-1 ring-current` : 'bg-fpl-card text-gray-400 hover:text-white'}`}
+                onClick={() => setPosition(pos)}
+              >{POSITIONS[pos]}</button>
+            ))}
+          </div>
+
+          <select
+            class="bg-fpl-card border border-gray-600 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm text-white focus:border-fpl-cyan focus:outline-none"
+            onChange={(e) => setSortBy(e.currentTarget.value)}
+          >
+            <option value="form_points">Sort: Form</option>
+            <option value="xgi_per_90">Sort: xGI/90</option>
+            <option value="pts_per_game">Sort: Pts/G</option>
+            <option value="now_cost">Sort: Price</option>
+            <option value="minutes_pct">Sort: Mins %</option>
+          </select>
+
+          <Show when={position() || search()}>
+            <button
+              class="text-xs text-gray-400 hover:text-white transition-colors"
+              onClick={() => { setPosition(undefined); setSearch(''); }}
+            >Reset</button>
+          </Show>
         </div>
-
-        <select
-          class="bg-fpl-card border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:border-fpl-cyan focus:outline-none"
-          onChange={(e) => setSortBy(e.currentTarget.value)}
-        >
-          <option value="form_points">Sort: Form Points</option>
-          <option value="xgi_per_90">Sort: xGI/90</option>
-          <option value="pts_per_game">Sort: Pts/Game</option>
-          <option value="now_cost">Sort: Price</option>
-          <option value="minutes_pct">Sort: Minutes %</option>
-        </select>
-
-        <Show when={position() || search()}>
-          <button
-            class="text-xs text-gray-400 hover:text-white transition-colors"
-            onClick={() => { setPosition(undefined); setSearch(''); }}
-          >Reset</button>
-        </Show>
       </div>
 
-      {/* Table */}
-      <div class="card overflow-hidden">
-        <Show
-          when={!players.loading}
-          fallback={
-            <div class="p-4 space-y-3">
-              {Array.from({ length: 8 }, (_, i) => (
-                <div class="flex gap-4 animate-pulse">
-                  <div class="h-4 w-28 bg-gray-700/40 rounded" />
-                  <div class="h-4 w-12 bg-gray-700/40 rounded" />
-                  <div class="h-4 w-10 bg-gray-700/40 rounded" />
-                  <div class="h-4 w-16 bg-gray-700/40 rounded" />
-                  <div class="h-4 w-10 bg-gray-700/40 rounded" />
-                </div>
-              ))}
+      {/* Loading skeleton */}
+      <Show when={players.loading}>
+        <div class="card p-4 space-y-3">
+          {Array.from({ length: 8 }, () => (
+            <div class="flex gap-4 animate-pulse">
+              <div class="h-4 w-28 bg-gray-700/40 rounded" />
+              <div class="h-4 w-12 bg-gray-700/40 rounded" />
+              <div class="h-4 w-10 bg-gray-700/40 rounded" />
+              <div class="h-4 w-16 bg-gray-700/40 rounded" />
+              <div class="h-4 w-10 bg-gray-700/40 rounded" />
             </div>
-          }
-        >
+          ))}
+        </div>
+      </Show>
+
+      {/* Mobile cards */}
+      <Show when={!players.loading}>
+        <div class="md:hidden space-y-2" data-testid="players-mobile">
+          <For each={players()}>
+            {(p) => (
+              <a href={`/players/${p.id}`} class="card p-4 block hover:bg-white/3 transition-colors">
+                <div class="flex items-center gap-3 mb-2">
+                  <img src={p.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
+                  <div class="flex-1 min-w-0">
+                    <div class="text-white font-medium truncate">
+                      {p.web_name}
+                      <span class="text-gray-500 text-xs ml-1">{p.team_short_name}</span>
+                      <Show when={p.is_penalty_taker}>
+                        <span class="ml-1 text-[11px] font-semibold text-fpl-green bg-fpl-green/10 px-1 rounded">P</span>
+                      </Show>
+                      <Show when={p.is_set_piece_taker}>
+                        <span class="ml-1 text-[11px] font-semibold text-fpl-cyan bg-fpl-cyan/10 px-1 rounded">SP</span>
+                      </Show>
+                      <Show when={p.news}>
+                        <span class="ml-1 text-[11px] text-fpl-pink" title={p.news || ''}>!</span>
+                      </Show>
+                    </div>
+                    <div class="text-xs text-gray-400">
+                      {formatCost(p.now_cost)} ·{' '}
+                      <span class={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${BADGE_CLASSES[p.position]}`}>
+                        {POSITIONS[p.position]}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <div class="text-fpl-green font-bold">{p.form_points ?? '-'}</div>
+                    <div class="text-[11px] text-gray-500">form</div>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 ml-12 text-center">
+                  <div>
+                    <div class="text-[11px] text-gray-500">xGI/90</div>
+                    <div class="text-white font-bold text-sm">{p.xgi_per_90 ?? '-'}</div>
+                  </div>
+                  <div>
+                    <div class="text-[11px] text-gray-500">Own%</div>
+                    <div class={`font-bold text-sm ${Number(p.selected_by_percent ?? 0) > 30 ? 'text-fpl-green' : Number(p.selected_by_percent ?? 0) < 5 ? 'text-fpl-pink' : 'text-white'}`}>
+                      {p.selected_by_percent ?? '-'}%
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-[11px] text-gray-500">Transfers</div>
+                    {(() => {
+                      const net = (p.transfers_in_event ?? 0) - (p.transfers_out_event ?? 0);
+                      return (
+                        <div class={`font-bold text-sm ${net > 0 ? 'text-fpl-green' : net < 0 ? 'text-fpl-pink' : 'text-gray-400'}`}>
+                          {net > 0 ? '+' : ''}{(net / 1000).toFixed(1)}k
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </a>
+            )}
+          </For>
+        </div>
+
+        {/* Desktop table */}
+        <div class="hidden md:block card overflow-hidden" data-testid="players-desktop">
           <div class="overflow-x-auto max-h-[70vh] overflow-y-auto">
             <table class="w-full text-sm">
               <thead class="sticky top-0 bg-fpl-card z-10">
@@ -164,8 +229,8 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
               </tbody>
             </table>
           </div>
-        </Show>
-      </div>
+        </div>
+      </Show>
     </div>
   );
 }

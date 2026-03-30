@@ -8,22 +8,22 @@ function PlayerCard(props: { pick: MyTeamPick; compact?: boolean }) {
   return (
     <a href={`/players/${p.player_id}`} class="flex flex-col items-center group">
       <div class="relative">
-        <img src={p.shirt_url ?? ''} alt="" class="w-10 h-10 md:w-14 md:h-14" />
+        <img src={p.shirt_url ?? ''} alt="" class="w-8 h-8 sm:w-10 sm:h-10 md:w-14 md:h-14" />
         {p.is_captain && (
-          <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-fpl-gold text-fpl-dark text-[11px] font-extrabold flex items-center justify-center">C</span>
+          <span class="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-fpl-gold text-fpl-dark text-[9px] sm:text-[11px] font-extrabold flex items-center justify-center">C</span>
         )}
         {p.is_vice_captain && (
-          <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-400 text-fpl-dark text-[11px] font-extrabold flex items-center justify-center">V</span>
+          <span class="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gray-400 text-fpl-dark text-[9px] sm:text-[11px] font-extrabold flex items-center justify-center">V</span>
         )}
       </div>
-      <div class="bg-fpl-card/90 backdrop-blur-sm rounded px-1.5 py-0.5 mt-1 text-center min-w-[56px] md:min-w-[70px]">
-        <div class="text-white text-xs font-bold truncate max-w-[80px] group-hover:text-fpl-cyan transition-colors">{p.web_name}</div>
+      <div class="bg-fpl-card/90 backdrop-blur-sm rounded px-1 sm:px-1.5 py-0.5 mt-0.5 sm:mt-1 text-center min-w-[44px] sm:min-w-[56px] md:min-w-[70px]">
+        <div class="text-white text-[10px] sm:text-xs font-bold truncate max-w-[52px] sm:max-w-[80px] group-hover:text-fpl-cyan transition-colors">{p.web_name}</div>
         {p.predicted_points && (
-          <div class="text-fpl-green text-[11px] font-bold">{p.predicted_points} pts</div>
+          <div class="text-fpl-green text-[9px] sm:text-[11px] font-bold">{p.predicted_points} pts</div>
         )}
       </div>
       {!props.compact && p.fixtures.length > 0 && (
-        <div class="hidden md:flex gap-0.5 mt-1">
+        <div class="hidden sm:flex gap-0.5 mt-1">
           <For each={p.fixtures.slice(0, 3)}>
             {(f) => {
               const color = fdrColor(f.difficulty);
@@ -45,7 +45,7 @@ function PlayerCard(props: { pick: MyTeamPick; compact?: boolean }) {
 
 function PitchRow(props: { picks: MyTeamPick[] }) {
   return (
-    <div class="flex justify-center gap-1.5 md:gap-6">
+    <div class="flex justify-center gap-0.5 sm:gap-1.5 md:gap-6">
       <For each={props.picks}>
         {(p) => <PlayerCard pick={p} />}
       </For>
@@ -140,27 +140,29 @@ export default function MyTeamView(props: { initialId?: number }) {
           return (
             <div>
               {/* Manager info bar */}
-              <div class="card p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div class="text-white font-bold text-lg">{t.team_name}</div>
-                  <div class="text-gray-400 text-sm">{t.manager_name}</div>
+              <div class="card p-4 mb-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3 sm:mb-0">
+                  <div>
+                    <div class="text-white font-bold text-base sm:text-lg">{t.team_name}</div>
+                    <div class="text-gray-400 text-sm">{t.manager_name}</div>
+                  </div>
                 </div>
-                <div class="flex gap-4 text-center">
+                <div class="grid grid-cols-4 gap-2 text-center">
                   <div>
-                    <div class="text-fpl-green font-extrabold text-lg">{t.overall_points}</div>
-                    <div class="text-[11px] text-gray-500 uppercase">Total Pts</div>
+                    <div class="text-fpl-green font-extrabold text-base sm:text-lg">{t.overall_points}</div>
+                    <div class="text-[10px] sm:text-[11px] text-gray-500 uppercase">Total Pts</div>
                   </div>
                   <div>
-                    <div class="text-white font-extrabold text-lg">{(t.overall_rank ?? 0).toLocaleString()}</div>
-                    <div class="text-[11px] text-gray-500 uppercase">Rank</div>
+                    <div class="text-white font-extrabold text-base sm:text-lg">{(t.overall_rank ?? 0).toLocaleString()}</div>
+                    <div class="text-[10px] sm:text-[11px] text-gray-500 uppercase">Rank</div>
                   </div>
                   <div>
-                    <div class="text-white font-bold text-lg">{t.gameweek_points}</div>
-                    <div class="text-[11px] text-gray-500 uppercase">GW Pts</div>
+                    <div class="text-white font-bold text-base sm:text-lg">{t.gameweek_points}</div>
+                    <div class="text-[10px] sm:text-[11px] text-gray-500 uppercase">GW Pts</div>
                   </div>
                   <div>
-                    <div class="text-gray-300 font-bold text-lg">{formatCost(t.bank)}</div>
-                    <div class="text-[11px] text-gray-500 uppercase">Bank</div>
+                    <div class="text-gray-300 font-bold text-base sm:text-lg">{formatCost(t.bank)}</div>
+                    <div class="text-[10px] sm:text-[11px] text-gray-500 uppercase">Bank</div>
                   </div>
                 </div>
               </div>
@@ -172,15 +174,15 @@ export default function MyTeamView(props: { initialId?: number }) {
               </div>
 
               {/* Pitch */}
-              <div class="card p-5 mb-4"
+              <div class="card p-3 sm:p-5 mb-4"
                 style="background: linear-gradient(180deg, #1a472a 0%, #2d6a3f 30%, #2d6a3f 70%, #1a472a 100%); border: 2px solid #ffffff10;">
                 {/* Field markings */}
-                <div class="relative py-4">
+                <div class="relative py-2 sm:py-4">
                   {/* Center circle - decorative */}
-                  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border border-white/10"></div>
+                  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 sm:w-24 h-16 sm:h-24 rounded-full border border-white/10"></div>
                   <div class="absolute top-1/2 left-0 right-0 border-t border-white/10"></div>
 
-                  <div class="relative z-10 space-y-6 md:space-y-8">
+                  <div class="relative z-10 space-y-3 sm:space-y-6 md:space-y-8">
                     <For each={rows()}>
                       {(rowPicks) => <PitchRow picks={rowPicks} />}
                     </For>
@@ -189,9 +191,9 @@ export default function MyTeamView(props: { initialId?: number }) {
               </div>
 
               {/* Bench */}
-              <div class="card p-4">
-                <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">Bench</div>
-                <div class="flex justify-center gap-4 md:gap-6">
+              <div class="card p-3 sm:p-4">
+                <div class="text-xs text-gray-500 uppercase tracking-wider mb-2 sm:mb-3">Bench</div>
+                <div class="flex justify-center gap-2 sm:gap-4 md:gap-6">
                   <For each={t.bench}>
                     {(p) => <PlayerCard pick={p} compact />}
                   </For>

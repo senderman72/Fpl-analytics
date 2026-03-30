@@ -1,4 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="96" fill="#37003c"/>
-  <text x="256" y="310" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="220" fill="#00ff87">FPL</text>
+  <g fill="#00ff87" transform="translate(72, 140)">
+    <!-- F -->
+    <rect x="0" y="0" width="40" height="232"/>
+    <rect x="0" y="0" width="120" height="40"/>
+    <rect x="0" y="96" width="100" height="36"/>
+    <!-- P -->
+    <rect x="148" y="0" width="40" height="232"/>
+    <rect x="148" y="0" width="100" height="40"/>
+    <rect x="248" y="0" width="40" height="136"/>
+    <rect x="148" y="96" width="100" height="40"/>
+    <!-- L -->
+    <rect x="316" y="0" width="40" height="232"/>
+    <rect x="316" y="192" width="120" height="40"/>
+  </g>
 </svg>

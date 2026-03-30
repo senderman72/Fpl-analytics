@@ -38,7 +38,7 @@ export default function DeadlineCountdown(props: Props) {
     <Show when={time()} fallback={<span class="text-fpl-pink font-bold">DEADLINE PASSED</span>}>
       {(t) => (
         <div>
-          <div classList={{'flex gap-3 md:gap-5 justify-center items-center': true, 'animate-pulse_soft': !!urgent()}}>
+          <div classList={{'flex gap-4 md:gap-6 justify-center items-center': true, 'animate-pulse_soft': !!urgent()}}>
             <Unit value={t().days} label="DAYS" />
             <Separator />
             <Unit value={t().hours} label="HRS" />
@@ -57,14 +57,14 @@ export default function DeadlineCountdown(props: Props) {
 function Unit(props: { value: number; label: string }) {
   return (
     <div class="text-center">
-      <div class="text-3xl sm:text-4xl md:text-5xl font-extrabold tabular-nums leading-none text-fpl-green">
+      <div class="text-5xl md:text-6xl lg:text-7xl font-extrabold tabular-nums leading-none" style={{ color: '#00ff87' }}>
         {String(props.value).padStart(2, '0')}
       </div>
-      <div class="text-[10px] sm:text-xs text-white/70 mt-1 tracking-widest">{props.label}</div>
+      <div class="text-xs md:text-sm mt-1.5 tracking-widest" style={{ color: 'rgba(255,255,255,0.7)' }}>{props.label}</div>
     </div>
   );
 }
 
 function Separator() {
-  return <span class="text-2xl sm:text-3xl md:text-4xl text-fpl-green/40 font-light">:</span>;
+  return <span class="text-4xl md:text-5xl font-light" style={{ color: 'rgba(0,255,135,0.4)' }}>:</span>;
 }

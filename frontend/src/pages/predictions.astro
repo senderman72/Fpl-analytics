@@ -1,10 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import ShareButtons from '../components/ShareButtons';
 import HeroCard from '../components/HeroCard.astro';
 import PositionBadge from '../components/PositionBadge.astro';
 import { getGameweeks } from '../api/gameweeks';
 import { getUpcomingPredictions } from '../api/predictions';
 import { POSITIONS, formatCost } from '../lib/types';
+import { buildCanonical } from '../lib/seo';
 
 const gameweeks = await getGameweeks();
 const predictions = await getUpcomingPredictions({ horizon: 5, limit: 50 });
@@ -15,10 +17,13 @@ const horizon = predictions[0]?.horizon ?? 5;
 const perGwIds = predictions[0]?.predicted_per_gw?.map(g => g.gw_id) ?? [];
 ---
 
-<Layout title="Predictions">
+<Layout title="Predictions" description="FPL predicted points using ridge regression on 22k+ gameweek samples — see who will score the most over the next 5 GWs.">
   <div class="flex items-baseline justify-between mb-6">
     <h1 class="page-title">Points Predictions</h1>
     <span class="text-gray-400 text-sm">Next {horizon} Gameweeks</span>
+  </div>
+  <div class="mb-6">
+    <ShareButtons client:idle url={buildCanonical('/predictions')} text={`FPL predicted points — next ${horizon} GWs`} />
   </div>
 
   <!-- Methodology Explainer -->

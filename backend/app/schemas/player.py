@@ -78,3 +78,9 @@ class PlayerFixture(BaseModel):
     difficulty: int | None
     kickoff_time: str | None
     is_double_gw: bool = False
+
+
+class PlayerIdName(BaseModel):
+    id: int
+    first_name: str
+    second_name: str

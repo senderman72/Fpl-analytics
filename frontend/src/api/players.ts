@@ -1,5 +1,5 @@
 import { get } from './client';
-import type { PlayerSummary, PlayerDetail, PlayerGWHistory, PlayerFixture } from '../lib/types';
+import type { PlayerSummary, PlayerDetail, PlayerGWHistory, PlayerFixture, PlayerIdName } from '../lib/types';
 
 export function getPlayers(params?: {
   position?: number;
@@ -22,4 +22,8 @@ export function getPlayerHistory(id: number) {
 
 export function getPlayerFixtures(id: number, limit = 8) {
   return get<PlayerFixture[]>(`/players/${id}/fixtures`, { limit });
+}
+
+export function getPlayerIds() {
+  return get<PlayerIdName[]>('/players/ids');
 }

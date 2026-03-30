@@ -5,13 +5,14 @@ import HeroCard from '../../components/HeroCard.astro';
 import PositionBadge from '../../components/PositionBadge.astro';
 import { getBuyCandidates } from '../../api/decisions';
 import { POSITIONS, formatCost } from '../../lib/types';
+import { slugify } from '../../lib/seo';
 
 const buys = await getBuyCandidates({ limit: 30 });
 const top3 = buys.slice(0, 3);
 const rest = buys.slice(3);
 ---
 
-<Layout title="Transfer Planner">
+<Layout title="Transfer Planner" description="Top FPL transfer targets ranked by xGI, form, value, and fixture difficulty — find the best buys right now.">
   <Breadcrumb items={[{ label: 'Tools' }, { label: 'Transfers' }]} />
   <h1 class="page-title mb-1">Transfer Planner</h1>
   <p class="text-gray-400 text-sm mb-6">Based on last 6 GWs form + upcoming fixtures · Ranked by xGI/90 (40%) + PPM (30%) + Form (30%) - FDR penalty</p>
@@ -20,7 +21,7 @@ const rest = buys.slice(3);
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
     {top3.map((b, i) => (
       <HeroCard rank={i + 1} accent={i === 0 ? 'border-fpl-green' : 'border-fpl-cyan'}>
-        <a href={`/players/${b.player_id}`} class="block">
+        <a href={`/players/${slugify(b.player_id, b.first_name, b.second_name)}`} class="block">
           <div class="flex items-center gap-3 mb-3">
             <img src={b.shirt_url || ''} alt="" class="w-12 h-12 shrink-0" loading="lazy" />
             <div>
@@ -48,7 +49,7 @@ const rest = buys.slice(3);
   <!-- Mobile cards -->
   <div class="md:hidden space-y-2">
     {rest.map((b, i) => (
-      <a href={`/players/${b.player_id}`} class="card p-4 block hover:bg-white/3 transition-colors">
+      <a href={`/players/${slugify(b.player_id, b.first_name, b.second_name)}`} class="card p-4 block hover:bg-white/3 transition-colors">
         <div class="flex items-center gap-3 mb-2">
           <span class="text-gray-500 text-xs w-5 text-right shrink-0">{i + 4}</span>
           <img src={b.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
@@ -94,7 +95,7 @@ const rest = buys.slice(3);
             <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors">
               <td class="py-2 px-3 text-gray-500">{i + 4}</td>
               <td class="py-2 px-3">
-                <a href={`/players/${b.player_id}`} class="flex items-center gap-2">
+                <a href={`/players/${slugify(b.player_id, b.first_name, b.second_name)}`} class="flex items-center gap-2">
                   <img src={b.shirt_url || ''} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
                   <div>
                     <span class="link-cyan font-medium">{b.web_name}</span>

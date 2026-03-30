@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /my-team
+Disallow: /api/
+
+Sitemap: https://fplanalytics.com/sitemap.xml

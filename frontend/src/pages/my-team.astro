@@ -6,7 +6,7 @@ const idParam = Astro.url.searchParams.get('id');
 const initialId = idParam ? parseInt(idParam, 10) : undefined;
 ---
 
-<Layout title="My Team">
+<Layout title="My Team" description="View your FPL team — lineup, predicted points, upcoming fixtures, and transfer suggestions.">
   <h1 class="page-title mb-6">My Team</h1>
   <MyTeamView client:only="solid-js" initialId={initialId} />
 </Layout>

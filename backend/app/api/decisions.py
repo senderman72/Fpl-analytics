@@ -121,6 +121,8 @@ async def get_buy_candidates(
             BuyCandidate(
                 player_id=player.id,
                 web_name=player.web_name,
+                first_name=player.first_name,
+                second_name=player.second_name,
                 shirt_url=shirt_url(team_code, player.position),
                 team_short_name=team_short,
                 position=player.position,
@@ -209,6 +211,8 @@ async def get_captain_picks(
             CaptainPick(
                 player_id=player.id,
                 web_name=player.web_name,
+                first_name=player.first_name,
+                second_name=player.second_name,
                 shirt_url=shirt_url(team_code, player.position),
                 team_short_name=team_short,
                 position=player.position,
@@ -307,6 +311,8 @@ async def get_differentials(
             DifferentialPick(
                 player_id=player.id,
                 web_name=player.web_name,
+                first_name=player.first_name,
+                second_name=player.second_name,
                 shirt_url=shirt_url(team_code, player.position),
                 team_short_name=team_short,
                 position=player.position,

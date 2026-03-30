@@ -4,10 +4,12 @@ import Breadcrumb from '../../components/Breadcrumb.astro';
 import HeroCard from '../../components/HeroCard.astro';
 import PositionBadge from '../../components/PositionBadge.astro';
 import Tooltip from '../../components/Tooltip.astro';
+import ShareButtons from '../../components/ShareButtons';
 import { getCaptainPicks } from '../../api/decisions';
 import { getGameweeks } from '../../api/gameweeks';
 import { POSITIONS, formatCost } from '../../lib/types';
 import { STAT_HELP } from '../../lib/explanations';
+import { slugify, buildCanonical } from '../../lib/seo';
 
 const picks = await getCaptainPicks(15);
 const gameweeks = await getGameweeks();
@@ -16,18 +18,21 @@ const top3 = picks.slice(0, 3);
 const rest = picks.slice(3);
 ---
 
-<Layout title="Captain Picker">
+<Layout title="Captain Picker" description={`${nextGW?.name ?? 'GW'} captain picks ranked by ceiling, form, BPS, and fixture difficulty — FPL Analytics.`}>
   <Breadcrumb items={[{ label: 'Tools' }, { label: 'Captain' }]} />
   <div class="flex items-baseline justify-between mb-6">
     <h1 class="page-title">Captain Picks</h1>
     {nextGW && <span class="text-gray-400 text-sm">{nextGW.name}</span>}
+  </div>
+  <div class="mb-6">
+    <ShareButtons client:idle url={buildCanonical('/decisions/captain')} text={`${nextGW?.name ?? 'GW'} captain picks from FPL Analytics`} />
   </div>
 
   <!-- Top 3 Hero Cards -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
     {top3.map((c, i) => (
       <HeroCard rank={i + 1} accent={i === 0 ? 'border-fpl-gold' : i === 1 ? 'border-gray-400' : 'border-amber-700'}>
-        <a href={`/players/${c.player_id}`} class="block">
+        <a href={`/players/${slugify(c.player_id, c.first_name, c.second_name)}`} class="block">
           <div class="flex items-center gap-3 mb-3">
             <img src={c.shirt_url || ''} alt="" class="w-12 h-12 shrink-0" loading="lazy" />
             <div>
@@ -63,7 +68,7 @@ const rest = picks.slice(3);
   {rest.length > 0 && (
     <div class="md:hidden space-y-2">
       {rest.map((c, i) => (
-        <a href={`/players/${c.player_id}`} class="card p-4 block hover:bg-white/3 transition-colors">
+        <a href={`/players/${slugify(c.player_id, c.first_name, c.second_name)}`} class="card p-4 block hover:bg-white/3 transition-colors">
           <div class="flex items-center gap-3">
             <span class="text-gray-500 text-xs w-5 text-right shrink-0">{i + 4}</span>
             <img src={c.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
@@ -112,7 +117,7 @@ const rest = picks.slice(3);
             <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors">
               <td class="py-2 px-3 text-gray-500">{i + 4}</td>
               <td class="py-2 px-3">
-                <a href={`/players/${c.player_id}`} class="flex items-center gap-2">
+                <a href={`/players/${slugify(c.player_id, c.first_name, c.second_name)}`} class="flex items-center gap-2">
                   <img src={c.shirt_url || ''} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
                   <div>
                     <span class="link-cyan font-medium">{c.web_name}</span>

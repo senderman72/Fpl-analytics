@@ -1,0 +1,249 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import PositionBadge from '../../components/PositionBadge.astro';
+import StatCard from '../../components/StatCard.astro';
+import FdrStrip from '../../components/FdrStrip.astro';
+import Tooltip from '../../components/Tooltip.astro';
+import ShareButtons from '../../components/ShareButtons';
+import PointsChart from '../../components/PointsChart';
+import XGIChart from '../../components/XGIChart';
+import PriceChart from '../../components/PriceChart';
+import { getPlayer, getPlayerHistory, getPlayerFixtures } from '../../api/players';
+import { POSITIONS, formatCost } from '../../lib/types';
+import { STAT_HELP } from '../../lib/explanations';
+import { slugify, playerIdFromSlug, buildCanonical } from '../../lib/seo';
+
+const { slug } = Astro.params;
+if (!slug) return Astro.redirect('/players', 302);
+
+const playerId = playerIdFromSlug(slug);
+if (isNaN(playerId)) return new Response('Not Found', { status: 404 });
+
+let player, history, fixtures;
+try {
+  [player, history, fixtures] = await Promise.all([
+    getPlayer(playerId),
+    getPlayerHistory(playerId),
+    getPlayerFixtures(playerId),
+  ]);
+} catch {
+  return new Response('Not Found', { status: 404 });
+}
+
+// Redirect to canonical slug if URL doesn't match (handles old /players/123 URLs)
+const canonicalSlug = slugify(player.id, player.first_name, player.second_name);
+if (slug !== canonicalSlug) {
+  return Astro.redirect(`/players/${canonicalSlug}`, 301);
+}
+
+const pageDescription = `${player.first_name} ${player.second_name} — FPL stats, form, xG, fixtures & predicted points.`;
+const totalPoints = history.reduce((sum, h) => sum + h.total_points, 0);
+const totalGoals = history.reduce((sum, h) => sum + h.goals_scored, 0);
+const totalAssists = history.reduce((sum, h) => sum + h.assists, 0);
+const totalBonus = history.reduce((sum, h) => sum + h.bonus, 0);
+---
+
+<Layout title={player.web_name} description={pageDescription}>
+  <Breadcrumb items={[{ label: 'Players', href: '/players' }, { label: player.web_name }]} />
+  <!-- Hero -->
+  <div class="card p-6 mb-4 bg-gradient-to-r from-fpl-purple/80 to-fpl-surface/80">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+      <!-- Player shirt + team badge -->
+      <div class="relative shrink-0">
+        <img src={player.shirt_url || ''} alt={player.web_name} class="w-24 h-24 md:w-28 md:h-28" loading="lazy" />
+        {player.team_badge_url && (
+          <img src={player.team_badge_url} alt={player.team_short_name ?? ''} class="absolute -bottom-2 -right-2 w-9 h-9 drop-shadow-md" loading="lazy" />
+        )}
+      </div>
+      <div class="flex-1">
+        <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+          {player.first_name} <span class="text-fpl-green">{player.second_name}</span>
+        </h1>
+        <div class="flex flex-wrap items-center gap-2 mt-1">
+          <span class="text-fpl-cyan font-semibold">{player.team_short_name}</span>
+          <PositionBadge position={player.position} />
+          <span class="text-gray-300">{formatCost(player.now_cost)}</span>
+          {player.is_penalty_taker && <span class="text-[11px] font-semibold text-fpl-green bg-fpl-green/10 px-1.5 py-0.5 rounded">PEN</span>}
+          {player.is_set_piece_taker && <span class="text-[11px] font-semibold text-fpl-cyan bg-fpl-cyan/10 px-1.5 py-0.5 rounded">SET PIECE</span>}
+        </div>
+        {player.news && <div class="text-fpl-pink text-sm mt-1">{player.news}</div>}
+      </div>
+      <div class="flex gap-6 sm:gap-8">
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-fpl-green">{totalPoints}</div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Points</div>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-white">{totalGoals}</div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Goals</div>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-white">{totalAssists}</div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Assists</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share buttons -->
+  <div class="mb-6">
+    <ShareButtons
+      client:idle
+      url={buildCanonical(`/players/${canonicalSlug}`)}
+      text={`${player.first_name} ${player.second_name} — FPL stats & predictions`}
+    />
+  </div>
+
+  <!-- Transfer Activity + Expected vs Actual -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div class="card p-5">
+      <h3 class="section-title mb-3">Transfer Activity</h3>
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <div class="stat-label">Ownership</div>
+          <div class="text-xl font-extrabold text-white">{player.selected_by_percent}%</div>
+        </div>
+        <div>
+          <div class="stat-label">Transferred In</div>
+          <div class="text-xl font-extrabold text-fpl-green">
+            {((player.transfers_in_event ?? 0) / 1000).toFixed(1)}k
+          </div>
+        </div>
+        <div>
+          <div class="stat-label">Transferred Out</div>
+          <div class="text-xl font-extrabold text-fpl-pink">
+            {((player.transfers_out_event ?? 0) / 1000).toFixed(1)}k
+          </div>
+        </div>
+      </div>
+      {player.cost_change_event !== 0 && player.cost_change_event != null && (
+        <div class="mt-3 text-sm">
+          Price change: <span class:list={[player.cost_change_event > 0 ? 'text-fpl-green' : 'text-fpl-pink', 'font-bold']}>
+            {player.cost_change_event > 0 ? '+' : ''}{(player.cost_change_event / 10).toFixed(1)}m
+          </span>
+        </div>
+      )}
+    </div>
+
+    {player.season_xg && player.season_goals != null && (
+      <div class="card p-5">
+        <Tooltip text={STAT_HELP.xg}><h3 class="section-title mb-2">Expected vs Actual</h3></Tooltip>
+        <XGIChart
+          client:only="solid-js"
+          goals={player.season_goals}
+          xg={Number(player.season_xg)}
+          assists={player.season_assists ?? 0}
+          xa={Number(player.season_xa ?? 0)}
+        />
+      </div>
+    )}
+  </div>
+
+  <!-- Recent Form -->
+  <div class="mb-2">
+    <Tooltip text={STAT_HELP.form}><h3 class="section-title">Recent Form <span class="text-xs text-gray-400 font-normal">(last 6 gameweeks)</span></h3></Tooltip>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+    <div class="card p-3"><StatCard label="Points" value={player.form_points ?? '-'} accent="text-fpl-green" subtext={`${(player.form_points ?? 0) >= 30 ? 'On fire' : (player.form_points ?? 0) >= 20 ? 'Good form' : 'Quiet spell'}`} /></div>
+    <div class="card p-3"><StatCard label="Pts/Game" value={player.pts_per_game ?? '-'} help={STAT_HELP.pts_per_game} subtext={`${Number(player.pts_per_game ?? 0) >= 5 ? 'Strong returns' : 'Below average'}`} /></div>
+    <div class="card p-3"><StatCard label="Minutes" value={player.minutes_pct ? `${Number(player.minutes_pct).toFixed(0)}%` : '-'} help={STAT_HELP.minutes_pct} subtext={`${Number(player.minutes_pct ?? 0) >= 80 ? 'Nailed starter' : Number(player.minutes_pct ?? 0) >= 50 ? 'Rotation risk' : 'Bench player'}`} /></div>
+    <div class="card p-3"><StatCard label="BPS Avg" value={player.bps_avg ?? '-'} help={STAT_HELP.bps_avg} subtext={`${Number(player.bps_avg ?? 0) >= 25 ? 'Bonus magnet' : 'Occasional bonus'}`} /></div>
+    <div class="card p-3"><StatCard label="Bonus" value={totalBonus} help={STAT_HELP.bps} subtext={`Season total`} /></div>
+  </div>
+
+  <!-- Season Expected Stats -->
+  {player.season_xg && (
+    <div class="mb-2">
+      <h3 class="section-title">Season Stats <span class="text-xs text-gray-400 font-normal">(full season from Understat)</span></h3>
+    </div>
+  )}
+  {player.season_xg && (
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div class="card p-3"><StatCard label="xG" value={Number(player.season_xg).toFixed(1)} help={STAT_HELP.xg} subtext={player.season_goals != null ? `Scored ${player.season_goals} (${player.season_goals > Number(player.season_xg) ? 'overperforming' : 'underperforming'})` : ''} /></div>
+      <div class="card p-3"><StatCard label="xA" value={player.season_xa ? Number(player.season_xa).toFixed(1) : '-'} help={STAT_HELP.xa} subtext={player.season_assists != null ? `Got ${player.season_assists} assists` : ''} /></div>
+      <div class="card p-3"><StatCard label="xGI/90" value={player.xgi_per_90 ?? '-'} accent="text-fpl-cyan" help={STAT_HELP.xgi_per_90} subtext={`${Number(player.xgi_per_90 ?? 0) >= 0.7 ? 'Elite' : Number(player.xgi_per_90 ?? 0) >= 0.4 ? 'Good' : 'Low'} attacking output`} /></div>
+      <div class="card p-3"><StatCard label="npxG" value={player.season_npxg ? Number(player.season_npxg).toFixed(1) : '-'} help={STAT_HELP.npxg} subtext="Excluding penalties" /></div>
+    </div>
+  )}
+
+  <!-- Points chart -->
+  <div class="card p-5 mb-6">
+    <h3 class="section-title mb-2">Points by Gameweek</h3>
+    <PointsChart client:only="solid-js" history={JSON.stringify(history)} />
+  </div>
+
+  <!-- Price history -->
+  {history.length > 1 && (
+    <div class="card p-5 mb-6">
+      <h3 class="section-title mb-2">Price History</h3>
+      <PriceChart client:only="solid-js" history={JSON.stringify(history)} />
+    </div>
+  )}
+
+  <!-- Fixtures -->
+  {fixtures.length > 0 && (
+    <div class="card p-5 mb-6">
+      <h3 class="section-title mb-4">Upcoming Fixtures</h3>
+      <FdrStrip fixtures={fixtures} />
+    </div>
+  )}
+
+  <!-- GW History — Mobile cards -->
+  <div class="md:hidden" data-testid="gw-history-mobile">
+    <h3 class="section-title mb-3">Gameweek History</h3>
+    <div class="space-y-2">
+      {history.map((h) => (
+        <div class:list={['card p-3', h.total_points >= 10 && 'border-l-2 border-l-fpl-green']}>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm font-medium">GW{h.gameweek_id}</span>
+            <span class:list={['text-lg font-bold tabular-nums', h.total_points >= 10 ? 'text-fpl-green' : 'text-white']}>{h.total_points} pts</span>
+          </div>
+          <div class="grid grid-cols-4 gap-2 text-center">
+            <div><div class="text-[11px] text-gray-500">Mins</div><div class="text-white text-sm font-medium tabular-nums">{h.minutes}</div></div>
+            <div><div class="text-[11px] text-gray-500">Goals</div><div class="text-white text-sm font-medium tabular-nums">{h.goals_scored || '-'}</div></div>
+            <div><div class="text-[11px] text-gray-500">Assists</div><div class="text-white text-sm font-medium tabular-nums">{h.assists || '-'}</div></div>
+            <div><div class="text-[11px] text-gray-500">Bonus</div><div class="text-white text-sm font-medium tabular-nums">{h.bonus || '-'}</div></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- GW History — Desktop table -->
+  <div class="hidden md:block card overflow-hidden" data-testid="gw-history-desktop">
+    <h3 class="section-title px-5 py-3 border-b border-gray-700/60">Gameweek History</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="sticky top-0 bg-fpl-card">
+          <tr class="text-left text-gray-400 border-b border-gray-700">
+            <th class="py-2.5 px-3 font-medium">GW</th>
+            <th class="py-2.5 px-3 text-right font-medium">Pts</th>
+            <th class="py-2.5 px-3 text-right font-medium">Mins</th>
+            <th class="py-2.5 px-3 text-right font-medium">G</th>
+            <th class="py-2.5 px-3 text-right font-medium">A</th>
+            <th class="py-2.5 px-3 text-right font-medium">CS</th>
+            <th class="py-2.5 px-3 text-right font-medium">Bonus</th>
+            <th class="py-2.5 px-3 text-right font-medium">BPS</th>
+            <th class="py-2.5 px-3 text-right font-medium">ICT</th>
+          </tr>
+        </thead>
+        <tbody>
+          {history.map((h) => (
+            <tr class:list={['border-b border-gray-800/40', h.total_points >= 10 && 'border-l-2 border-l-fpl-green']}>
+              <td class="py-2 px-3 text-gray-400">GW{h.gameweek_id}</td>
+              <td class:list={['py-2 px-3 text-right font-semibold tabular-nums', h.total_points >= 10 ? 'text-fpl-green' : 'text-white']}>{h.total_points}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.minutes}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.goals_scored || '-'}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.assists || '-'}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.clean_sheets || '-'}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.bonus || '-'}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.bps}</td>
+              <td class="py-2 px-3 text-right tabular-nums">{h.ict_index}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</Layout>

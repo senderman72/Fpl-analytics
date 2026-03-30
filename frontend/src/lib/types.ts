@@ -84,9 +84,17 @@ export interface GameweekOut {
   highest_score: number | null;
 }
 
+export interface PlayerIdName {
+  id: number;
+  first_name: string;
+  second_name: string;
+}
+
 export interface BuyCandidate {
   player_id: number;
   web_name: string;
+  first_name: string;
+  second_name: string;
   shirt_url: string | null;
   team_short_name: string;
   position: number;
@@ -106,6 +114,8 @@ export interface BuyCandidate {
 export interface CaptainPick {
   player_id: number;
   web_name: string;
+  first_name: string;
+  second_name: string;
   shirt_url: string | null;
   team_short_name: string;
   position: number;
@@ -132,6 +142,8 @@ export interface ChipAdvice {
 export interface DifferentialPick {
   player_id: number;
   web_name: string;
+  first_name: string;
+  second_name: string;
   shirt_url: string | null;
   team_short_name: string;
   position: number;

@@ -19,6 +19,7 @@ from app.schemas.player import (
     PlayerDetail,
     PlayerFixture,
     PlayerGWHistory,
+    PlayerIdName,
     PlayerSummary,
 )
 from app.services.fpl_urls import badge_url, shirt_url
@@ -107,6 +108,24 @@ async def list_players(
 
     return APIResponse(
         data=players, meta={"total": total, "limit": limit, "offset": offset}
+    )
+
+
+@router.get("/ids", response_model=APIResponse[list[PlayerIdName]])
+async def list_player_ids(
+    session: AsyncSession = Depends(get_session),
+) -> APIResponse[list[PlayerIdName]]:
+    """Lightweight endpoint returning all active player IDs and names (for sitemap)."""
+    result = await session.execute(
+        select(Player.id, Player.first_name, Player.second_name).where(
+            Player.status != "u"
+        )
+    )
+    return APIResponse(
+        data=[
+            PlayerIdName(id=pid, first_name=fn, second_name=sn)
+            for pid, fn, sn in result.all()
+        ]
     )
 
 

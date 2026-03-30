@@ -2,6 +2,7 @@ import { createSignal, createResource, For, Show } from 'solid-js';
 import { getPlayers } from '../api/players';
 import { POSITIONS, formatCost } from '../lib/types';
 import type { PlayerSummary } from '../lib/types';
+import { slugify } from '../lib/seo';
 
 const BADGE_CLASSES: Record<number, string> = {
   1: 'bg-amber-500/15 text-amber-400',
@@ -98,7 +99,7 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
         <div class="md:hidden space-y-2" data-testid="players-mobile">
           <For each={players()}>
             {(p) => (
-              <a href={`/players/${p.id}`} class="card p-4 block hover:bg-white/3 transition-colors">
+              <a href={`/players/${slugify(p.id, p.first_name, p.second_name)}`} class="card p-4 block hover:bg-white/3 transition-colors">
                 <div class="flex items-center gap-3 mb-2">
                   <img src={p.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
                   <div class="flex-1 min-w-0">
@@ -175,7 +176,7 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
               <tbody>
                 <For each={players()}>
                   {(p) => (
-                    <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors cursor-pointer" onClick={() => window.location.href = `/players/${p.id}`}>
+                    <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors cursor-pointer" onClick={() => window.location.href = `/players/${slugify(p.id, p.first_name, p.second_name)}`}>
                       <td class="py-2.5 px-4">
                         <div class="flex items-center gap-2.5">
                           <img
@@ -184,7 +185,7 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
                             class="w-9 h-9 shrink-0"
                             loading="lazy"
                           />
-                          <a href={`/players/${p.id}`} class="text-fpl-cyan hover:underline decoration-fpl-cyan/40 underline-offset-2 font-medium" onClick={(e) => e.stopPropagation()}>
+                          <a href={`/players/${slugify(p.id, p.first_name, p.second_name)}`} class="text-fpl-cyan hover:underline decoration-fpl-cyan/40 underline-offset-2 font-medium" onClick={(e) => e.stopPropagation()}>
                             {p.web_name}
                           </a>
                         </div>

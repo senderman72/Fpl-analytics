@@ -8,6 +8,8 @@ from pydantic import BaseModel
 class BuyCandidate(BaseModel):
     player_id: int
     web_name: str
+    first_name: str
+    second_name: str
     shirt_url: str | None = None
     team_short_name: str
     position: int
@@ -27,6 +29,8 @@ class BuyCandidate(BaseModel):
 class CaptainPick(BaseModel):
     player_id: int
     web_name: str
+    first_name: str
+    second_name: str
     shirt_url: str | None = None
     team_short_name: str
     position: int
@@ -54,6 +58,8 @@ class ChipAdvice(BaseModel):
 class DifferentialPick(BaseModel):
     player_id: int
     web_name: str
+    first_name: str
+    second_name: str
     shirt_url: str | None = None
     team_short_name: str
     position: int

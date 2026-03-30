@@ -1,5 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import JsonLd from '../components/JsonLd.astro';
+import { websiteJsonLd, webAppJsonLd } from '../lib/seo';
 import DeadlineCountdown from '../components/DeadlineCountdown';
 import HeroCard from '../components/HeroCard.astro';
 import PositionBadge from '../components/PositionBadge.astro';
@@ -9,6 +11,7 @@ import { getBuyCandidates, getCaptainPicks, getDifferentials } from '../api/deci
 import { getPlayers } from '../api/players';
 import { POSITIONS, formatCost } from '../lib/types';
 import { STAT_HELP } from '../lib/explanations';
+import { slugify } from '../lib/seo';
 
 const gameweeks = await getGameweeks();
 const currentGW = gameweeks.find(gw => gw.is_current);
@@ -30,7 +33,9 @@ const quickLinks = [
 ];
 ---
 
-<Layout title="Dashboard">
+<Layout title="Dashboard" description="FPL Analytics dashboard — deadline countdown, captain picks, best transfers, trending players, and differentials for Fantasy Premier League.">
+  <JsonLd schema={websiteJsonLd()} />
+  <JsonLd schema={webAppJsonLd()} />
   <!-- Hero: Deadline + Quick Actions -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
     <div class="lg:col-span-2 relative rounded-2xl overflow-hidden">
@@ -114,7 +119,7 @@ const quickLinks = [
       </div>
       <div class="divide-y divide-gray-800/60">
         {buys.map((b, i) => (
-          <a href={`/players/${b.player_id}`} class="px-5 py-3 block hover:bg-white/3 transition-colors">
+          <a href={`/players/${slugify(b.player_id, b.first_name, b.second_name)}`} class="px-5 py-3 block hover:bg-white/3 transition-colors">
             <div class="flex items-center gap-3">
               <span class:list={[
                 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
@@ -146,7 +151,7 @@ const quickLinks = [
         {trendingSorted.map((p) => {
           const netTransfers = (p.transfers_in_event ?? 0) - (p.transfers_out_event ?? 0);
           return (
-            <a href={`/players/${p.id}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
+            <a href={`/players/${slugify(p.id, p.first_name, p.second_name)}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
               <img src={p.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
               <div class="flex-1 min-w-0">
                 <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-500 text-xs">{p.team_short_name}</span></div>
@@ -172,7 +177,7 @@ const quickLinks = [
       </div>
       <div class="divide-y divide-gray-800/60">
         {differentials.map((d) => (
-          <a href={`/players/${d.player_id}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
+          <a href={`/players/${slugify(d.player_id, d.first_name, d.second_name)}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
             <img src={d.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
             <div class="flex-1 min-w-0">
               <div class="text-white font-medium truncate">{d.web_name} <span class="text-gray-500 text-xs">{d.team_short_name}</span></div>

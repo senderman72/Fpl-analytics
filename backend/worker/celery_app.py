@@ -33,3 +33,8 @@ if settings.celery_broker_url.startswith("rediss://"):
     )
 
 celery_app.autodiscover_tasks(["worker"])
+
+# Register Beat schedule
+from worker.schedule import beat_schedule  # noqa: E402
+
+celery_app.conf.beat_schedule = beat_schedule

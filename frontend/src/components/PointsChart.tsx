@@ -9,7 +9,10 @@ interface GW {
 }
 
 export default function PointsChart(props: { history: string }) {
-  const data = createMemo<GW[]>(() => JSON.parse(props.history));
+  const data = createMemo<GW[]>(() => {
+    try { return JSON.parse(props.history); }
+    catch { return []; }
+  });
 
   const options = createMemo<ApexOptions>(() => ({
     ...baseChartOptions,

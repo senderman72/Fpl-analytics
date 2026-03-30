@@ -14,13 +14,11 @@ class Settings(BaseSettings):
 
     # Application
     app_env: str = "development"
-    debug: bool = True
+    debug: bool = False
     log_level: str = "INFO"
 
-    # PostgreSQL
-    database_url: str = (
-        "postgresql+asyncpg://fpl:fpl_secret@localhost:5432/fpl_analytics"
-    )
+    # PostgreSQL (must be set via .env or environment variable)
+    database_url: str = ""
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"

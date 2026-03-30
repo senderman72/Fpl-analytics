@@ -4,12 +4,12 @@ import type { ApexOptions } from 'apexcharts';
 
 export const FPL_COLORS = {
   green: '#00ff87',
-  cyan: '#05f0ff',
-  pink: '#ff2882',
-  gold: '#e8d44d',
+  cyan: '#04f5ff',
+  pink: '#e90052',
+  gold: '#ffd700',
   purple: '#37003c',
-  dark: '#0e1117',
-  card: '#161b22',
+  dark: '#1a1a2e',
+  card: '#16213e',
 } as const;
 
 export const baseChartOptions: ApexOptions = {

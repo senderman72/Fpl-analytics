@@ -1,5 +1,6 @@
 """Decision support endpoints — buys, captains, chips, differentials."""
 
+import asyncio
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query
@@ -23,17 +24,10 @@ from app.schemas.decision import (
     PriceChangeCandidate,
     PriceChangePrediction,
 )
+from app.services.fpl_urls import shirt_url
 from app.services.points_model import predict_upcoming
 
 router = APIRouter(prefix="/decisions", tags=["decisions"])
-
-FPL_SHIRTS = "https://fantasy.premierleague.com/dist/img/shirts/standard"
-
-
-def _shirt_url(team_code: int, position: int) -> str:
-    if position == 1:  # GK
-        return f"{FPL_SHIRTS}/shirt_{team_code}_1-110.webp"
-    return f"{FPL_SHIRTS}/shirt_{team_code}-110.webp"
 
 
 async def _get_next_gw(session: AsyncSession) -> int | None:
@@ -116,7 +110,7 @@ async def get_buy_candidates(
     )
 
     # Get predicted points across the horizon
-    pred_list = predict_upcoming(horizon=actual_horizon or 5)
+    pred_list = await asyncio.to_thread(predict_upcoming, actual_horizon or 5)
     pred_lookup = {p["player_id"]: p["predicted_points"] for p in pred_list}
 
     candidates = []
@@ -127,7 +121,7 @@ async def get_buy_candidates(
             BuyCandidate(
                 player_id=player.id,
                 web_name=player.web_name,
-                shirt_url=_shirt_url(team_code, player.position),
+                shirt_url=shirt_url(team_code, player.position),
                 team_short_name=team_short,
                 position=player.position,
                 now_cost=player.now_cost,
@@ -215,7 +209,7 @@ async def get_captain_picks(
             CaptainPick(
                 player_id=player.id,
                 web_name=player.web_name,
-                shirt_url=_shirt_url(team_code, player.position),
+                shirt_url=shirt_url(team_code, player.position),
                 team_short_name=team_short,
                 position=player.position,
                 now_cost=player.now_cost,
@@ -313,7 +307,7 @@ async def get_differentials(
             DifferentialPick(
                 player_id=player.id,
                 web_name=player.web_name,
-                shirt_url=_shirt_url(team_code, player.position),
+                shirt_url=shirt_url(team_code, player.position),
                 team_short_name=team_short,
                 position=player.position,
                 now_cost=player.now_cost,
@@ -358,7 +352,7 @@ async def get_price_changes(
         candidate = PriceChangeCandidate(
             player_id=player.id,
             web_name=player.web_name,
-            shirt_url=_shirt_url(team_code, player.position),
+            shirt_url=shirt_url(team_code, player.position),
             team_short_name=team_short,
             position=player.position,
             now_cost=player.now_cost,

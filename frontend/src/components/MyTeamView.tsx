@@ -1,28 +1,7 @@
 import { createSignal, createResource, For, Show } from 'solid-js';
 import type { MyTeamResponse, MyTeamPick } from '../lib/types';
-
-const API_PREFIX = '/api';
-
-async function fetchMyTeam(managerId: number): Promise<MyTeamResponse> {
-  const res = await fetch(`${API_PREFIX}/my-team/${managerId}`);
-  if (!res.ok) {
-    if (res.status === 404) throw new Error('Manager not found. Check your ID.');
-    throw new Error(`Failed to load team (${res.status})`);
-  }
-  const json = await res.json();
-  return json.data;
-}
-
-function fdrColor(d: number): string {
-  if (d <= 2) return '#10b981';
-  if (d === 3) return '#6b7280';
-  if (d === 4) return '#f59e0b';
-  return '#ef4444';
-}
-
-function formatCost(tenths: number): string {
-  return `£${(tenths / 10).toFixed(1)}m`;
-}
+import { getMyTeam } from '../api/my-team';
+import { fdrColor, formatCost } from '../lib/types';
 
 function PlayerCard(props: { pick: MyTeamPick; compact?: boolean }) {
   const p = props.pick;
@@ -82,7 +61,7 @@ export default function MyTeamView(props: { initialId?: number }) {
 
   const [data, { refetch }] = createResource(
     () => submitted() ? managerId() : null,
-    (id) => id ? fetchMyTeam(id) : Promise.resolve(null as unknown as MyTeamResponse),
+    (id) => id ? getMyTeam(id) : Promise.resolve(null as unknown as MyTeamResponse),
   );
 
   function handleSubmit(e: Event) {
@@ -101,10 +80,10 @@ export default function MyTeamView(props: { initialId?: number }) {
   const rows = () => {
     const d = data();
     if (!d) return [];
-    const gk = d.starting.filter(p => p.position === 1);
-    const def_ = d.starting.filter(p => p.position === 2);
-    const mid = d.starting.filter(p => p.position === 3);
-    const fwd = d.starting.filter(p => p.position === 4);
+    const gk = d.starting.filter((p: MyTeamPick) => p.position === 1);
+    const def_ = d.starting.filter((p: MyTeamPick) => p.position === 2);
+    const mid = d.starting.filter((p: MyTeamPick) => p.position === 3);
+    const fwd = d.starting.filter((p: MyTeamPick) => p.position === 4);
     return [gk, def_, mid, fwd];
   };
 

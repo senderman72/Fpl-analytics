@@ -95,7 +95,7 @@ const quickLinks = [
         <span>Captain Pick of the Week</span>
       </div>
       <div class="flex items-center gap-3">
-        <img src={topCaptain.shirt_url} alt="" class="w-10 h-10 shrink-0" loading="lazy" />
+        <img src={topCaptain.shirt_url || ''} alt="" class="w-10 h-10 shrink-0" loading="lazy" />
         <span class="text-xl font-extrabold text-white">{topCaptain.web_name}</span>
         <span class="text-gray-400">{topCaptain.team_short_name}</span>
         <PositionBadge position={topCaptain.position} />
@@ -120,7 +120,7 @@ const quickLinks = [
                 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
                 i === 0 ? 'bg-fpl-green/15 text-fpl-green' : 'bg-gray-700/50 text-gray-400',
               ]}>{i + 1}</span>
-              <img src={b.shirt_url} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
+              <img src={b.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
               <div class="flex-1 min-w-0">
                 <div class="text-white font-medium truncate">{b.web_name} <span class="text-gray-500 text-xs">{b.team_short_name}</span></div>
                 <div class="text-xs text-gray-400">{formatCost(b.now_cost)} · {b.selected_by_percent}% owned</div>
@@ -147,7 +147,7 @@ const quickLinks = [
           const netTransfers = (p.transfers_in_event ?? 0) - (p.transfers_out_event ?? 0);
           return (
             <a href={`/players/${p.id}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
-              <img src={p.shirt_url} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
+              <img src={p.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
               <div class="flex-1 min-w-0">
                 <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-500 text-xs">{p.team_short_name}</span></div>
                 <div class="text-xs text-gray-400">{formatCost(p.now_cost)} · {p.selected_by_percent}% owned</div>
@@ -173,7 +173,7 @@ const quickLinks = [
       <div class="divide-y divide-gray-800/60">
         {differentials.map((d) => (
           <a href={`/players/${d.player_id}`} class="px-5 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
-            <img src={d.shirt_url} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
+            <img src={d.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
             <div class="flex-1 min-w-0">
               <div class="text-white font-medium truncate">{d.web_name} <span class="text-gray-500 text-xs">{d.team_short_name}</span></div>
               <div class="text-xs text-gray-400">{formatCost(d.now_cost)} · only {d.selected_by_percent}% owned</div>

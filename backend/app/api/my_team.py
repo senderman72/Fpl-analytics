@@ -1,5 +1,6 @@
 """My Team endpoint — fetch and enrich a manager's squad."""
 
+import asyncio
 import logging
 from decimal import Decimal
 
@@ -16,19 +17,12 @@ from app.models.team import Team
 from app.schemas.common import APIResponse
 from app.schemas.my_team import FixturePreview, MyTeamPick, MyTeamResponse
 from app.services.fpl_client import fetch_manager_info, fetch_manager_picks
+from app.services.fpl_urls import shirt_url
 from app.services.points_model import predict_upcoming
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["my-team"])
-
-FPL_SHIRTS = "https://fantasy.premierleague.com/dist/img/shirts/standard"
-
-
-def _shirt_url(team_code: int, position: int) -> str:
-    if position == 1:
-        return f"{FPL_SHIRTS}/shirt_{team_code}_1-110.webp"
-    return f"{FPL_SHIRTS}/shirt_{team_code}-110.webp"
 
 
 @router.get("/my-team/{manager_id}", response_model=APIResponse[MyTeamResponse])
@@ -41,9 +35,7 @@ async def get_my_team(
     try:
         manager = await fetch_manager_info(manager_id)
     except Exception as exc:
-        raise HTTPException(
-            status_code=404, detail="Manager not found"
-        ) from exc
+        raise HTTPException(status_code=404, detail="Manager not found") from exc
 
     current_event = manager.get("current_event")
     if not current_event:
@@ -77,7 +69,7 @@ async def get_my_team(
     player_map = {p.id: (p, ts, tc, f) for p, ts, tc, f in rows}
 
     # 4. Get predictions
-    pred_list = predict_upcoming(horizon=1)
+    pred_list = await asyncio.to_thread(predict_upcoming, 1)
     pred_lookup = {p["player_id"]: p["predicted_points"] for p in pred_list}
 
     # 5. Get upcoming fixtures for all teams
@@ -93,11 +85,13 @@ async def get_my_team(
         team_names = {tid: sn for tid, sn in teams_result.all()}
 
         fix_result = await session.execute(
-            select(Fixture).where(
+            select(Fixture)
+            .where(
                 Fixture.gameweek_id >= next_gw,
                 Fixture.gameweek_id <= next_gw + 2,
                 Fixture.gameweek_id.isnot(None),
-            ).order_by(Fixture.gameweek_id)
+            )
+            .order_by(Fixture.gameweek_id)
         )
         for f in fix_result.scalars().all():
             # Home team perspective
@@ -132,7 +126,7 @@ async def get_my_team(
             team_pick = MyTeamPick(
                 player_id=pid,
                 web_name=player.web_name,
-                shirt_url=_shirt_url(team_code, player.position),
+                shirt_url=shirt_url(team_code, player.position),
                 team_short_name=team_short,
                 position=player.position,
                 slot=pick["position"],
@@ -150,6 +144,8 @@ async def get_my_team(
                 player_id=pid,
                 web_name=f"Player {pid}",
                 position=pick.get("element_type", 4),
+                team_short_name="???",
+                shirt_url=None,
                 slot=pick["position"],
                 is_captain=pick["is_captain"],
                 is_vice_captain=pick["is_vice_captain"],

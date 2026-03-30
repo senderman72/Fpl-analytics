@@ -57,7 +57,7 @@ function formatNet(n: number) {
             return (
               <a href={`/players/${p.player_id}`} class="flex items-center gap-3 px-4 py-3 border-b border-gray-800/40 hover:bg-white/3 transition-colors last:border-0">
                 <span class="text-gray-500 text-xs w-5 text-right shrink-0">{i + 1}</span>
-                <img src={p.shirt_url} alt="" class="w-8 h-8 shrink-0" loading="lazy" />
+                <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0" loading="lazy" />
                 <div class="flex-1 min-w-0">
                   <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-500 text-xs">{p.team_short_name}</span></div>
                   <div class="text-xs text-gray-400">{formatCost(p.now_cost)} · {p.selected_by_percent}% owned</div>
@@ -91,7 +91,7 @@ function formatNet(n: number) {
             return (
               <a href={`/players/${p.player_id}`} class="flex items-center gap-3 px-4 py-3 border-b border-gray-800/40 hover:bg-white/3 transition-colors last:border-0">
                 <span class="text-gray-500 text-xs w-5 text-right shrink-0">{i + 1}</span>
-                <img src={p.shirt_url} alt="" class="w-8 h-8 shrink-0" loading="lazy" />
+                <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0" loading="lazy" />
                 <div class="flex-1 min-w-0">
                   <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-500 text-xs">{p.team_short_name}</span></div>
                   <div class="text-xs text-gray-400">{formatCost(p.now_cost)} · {p.selected_by_percent}% owned</div>

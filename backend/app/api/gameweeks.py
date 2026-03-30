@@ -20,6 +20,7 @@ from app.schemas.gameweek import (
     LivePlayerScore,
 )
 from app.services.fpl_client import fetch_live_gw
+from app.services.fpl_urls import PL_CDN, shirt_url
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,7 @@ async def list_fixtures(
     teams_result = await session.execute(select(Team.id, Team.short_name, Team.code))
     team_info = {tid: (sn, code) for tid, sn, code in teams_result.all()}
 
-    pl_cdn = "https://resources.premierleague.com/premierleague"
+    pl_cdn = PL_CDN
 
     return APIResponse(
         data=[
@@ -110,15 +111,6 @@ async def list_fixtures(
     )
 
 
-FPL_SHIRTS = "https://fantasy.premierleague.com/dist/img/shirts/standard"
-
-
-def _shirt_url(team_code: int, position: int) -> str:
-    if position == 1:
-        return f"{FPL_SHIRTS}/shirt_{team_code}_1-110.webp"
-    return f"{FPL_SHIRTS}/shirt_{team_code}-110.webp"
-
-
 @router.get("/live/{gw_id}", response_model=APIResponse[LiveGWResponse])
 async def get_live_gw(
     gw_id: int,
@@ -139,7 +131,7 @@ async def get_live_gw(
     )
     db_fixtures = fix_result.scalars().all()
 
-    pl_cdn = "https://resources.premierleague.com/premierleague"
+    pl_cdn = PL_CDN
     fixtures = []
     for f in db_fixtures:
         home_info = team_map.get(f.home_team_id, ("???", 0))
@@ -151,12 +143,10 @@ async def get_live_gw(
                 home_team_short=home_info[0],
                 away_team_short=away_info[0],
                 home_badge_url=(
-                    f"{pl_cdn}/badges/100/t{home_info[1]}.png"
-                    if home_info[1] else None
+                    f"{pl_cdn}/badges/100/t{home_info[1]}.png" if home_info[1] else None
                 ),
                 away_badge_url=(
-                    f"{pl_cdn}/badges/100/t{away_info[1]}.png"
-                    if away_info[1] else None
+                    f"{pl_cdn}/badges/100/t{away_info[1]}.png" if away_info[1] else None
                 ),
                 home_goals=f.home_goals or 0,
                 away_goals=f.away_goals or 0,
@@ -185,7 +175,7 @@ async def get_live_gw(
                 LivePlayerScore(
                     player_id=pid,
                     web_name=web_name,
-                    shirt_url=_shirt_url(t_info[1], position),
+                    shirt_url=shirt_url(t_info[1], position),
                     minutes=stats.get("minutes", 0),
                     goals_scored=stats.get("goals_scored", 0),
                     assists=stats.get("assists", 0),

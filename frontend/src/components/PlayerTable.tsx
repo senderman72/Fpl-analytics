@@ -114,7 +114,7 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
                       <td class="py-2.5 px-4">
                         <div class="flex items-center gap-2.5">
                           <img
-                            src={p.shirt_url!}
+                            src={p.shirt_url || ''}
                             alt=""
                             class="w-9 h-9 shrink-0"
                             loading="lazy"

@@ -1,5 +1,7 @@
 """Points prediction endpoint."""
 
+import asyncio
+
 from fastapi import APIRouter, Query
 
 from app.schemas.common import APIResponse
@@ -16,7 +18,7 @@ async def get_predictions(
     limit: int = Query(50, ge=1, le=500),
 ) -> APIResponse[list[PredictionOut]]:
     """Get predicted points for all players for a given gameweek."""
-    predictions = predict_gw(gw_id)
+    predictions = await asyncio.to_thread(predict_gw, gw_id)
 
     if position:
         predictions = [p for p in predictions if p["position"] == position]
@@ -34,7 +36,7 @@ async def get_upcoming_predictions(
     limit: int = Query(50, ge=1, le=500),
 ) -> APIResponse[list[PredictionOut]]:
     """Predict points across the next N upcoming gameweeks."""
-    predictions = predict_upcoming(horizon=horizon)
+    predictions = await asyncio.to_thread(predict_upcoming, horizon)
 
     if position:
         predictions = [p for p in predictions if p["position"] == position]

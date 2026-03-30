@@ -29,7 +29,7 @@ const rest = picks.slice(3);
       <HeroCard rank={i + 1} accent={i === 0 ? 'border-fpl-gold' : i === 1 ? 'border-gray-400' : 'border-amber-700'}>
         <a href={`/players/${c.player_id}`} class="block">
           <div class="flex items-center gap-3 mb-3">
-            <img src={c.shirt_url} alt="" class="w-12 h-12 shrink-0" loading="lazy" />
+            <img src={c.shirt_url || ''} alt="" class="w-12 h-12 shrink-0" loading="lazy" />
             <div>
               <div class="flex items-center gap-2">
                 <span class="text-white font-bold text-lg">{c.web_name}</span>
@@ -66,7 +66,7 @@ const rest = picks.slice(3);
         <a href={`/players/${c.player_id}`} class="card p-4 block hover:bg-white/3 transition-colors">
           <div class="flex items-center gap-3">
             <span class="text-gray-500 text-xs w-5 text-right shrink-0">{i + 4}</span>
-            <img src={c.shirt_url} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
+            <img src={c.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
             <div class="flex-1 min-w-0">
               <div class="text-white font-medium truncate">{c.web_name} <span class="text-gray-500 text-xs">{c.team_short_name}</span></div>
               <div class="flex gap-2 mt-1">
@@ -113,7 +113,7 @@ const rest = picks.slice(3);
               <td class="py-2 px-3 text-gray-500">{i + 4}</td>
               <td class="py-2 px-3">
                 <a href={`/players/${c.player_id}`} class="flex items-center gap-2">
-                  <img src={c.shirt_url} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
+                  <img src={c.shirt_url || ''} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
                   <div>
                     <span class="link-cyan font-medium">{c.web_name}</span>
                     <span class="text-gray-500 text-xs ml-1">{c.team_short_name}</span>

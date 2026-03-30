@@ -1,14 +1,7 @@
 import { createSignal, createResource, For, Show, onCleanup } from 'solid-js';
 import type { LiveGWResponse } from '../lib/types';
 
-const API_PREFIX = '/api';
-
-async function fetchLive(gwId: number): Promise<LiveGWResponse> {
-  const res = await fetch(`${API_PREFIX}/live/${gwId}`);
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  const json = await res.json();
-  return json.data;
-}
+import { getLiveGW } from '../api/gameweeks';
 
 function hasLiveFixtures(data: LiveGWResponse | undefined): boolean {
   if (!data) return false;
@@ -31,7 +24,7 @@ export default function LiveTracker(props: { currentGwId: number }) {
 
   const [data, { refetch }] = createResource(
     () => props.currentGwId,
-    (gwId) => fetchLive(gwId),
+    (gwId) => getLiveGW(gwId),
   );
 
   // Smart polling: only poll when fixtures are in progress
@@ -41,12 +34,14 @@ export default function LiveTracker(props: { currentGwId: number }) {
     if (pollInterval) return;
     setPolling(true);
     pollInterval = setInterval(async () => {
-      await refetch();
-      setLastUpdated(Date.now());
-
-      // Stop polling once all fixtures are finished
-      if (allFixturesFinished(data())) {
-        stopPolling();
+      try {
+        await refetch();
+        setLastUpdated(Date.now());
+        if (allFixturesFinished(data())) {
+          stopPolling();
+        }
+      } catch {
+        // Polling failure is non-fatal; will retry next interval
       }
     }, 60_000);
   }
@@ -189,7 +184,7 @@ export default function LiveTracker(props: { currentGwId: number }) {
                           <td class="py-2 px-3 text-gray-500">{i() + 1}</td>
                           <td class="py-2 px-3">
                             <a href={`/players/${p.player_id}`} class="flex items-center gap-2">
-                              <img src={p.shirt_url} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
+                              <img src={p.shirt_url || ''} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
                               <span class="text-fpl-cyan font-medium hover:underline">{p.web_name}</span>
                             </a>
                           </td>

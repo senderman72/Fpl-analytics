@@ -57,10 +57,7 @@ export default function DeadlineCountdown(props: Props) {
 function Unit(props: { value: number; label: string; urgent?: boolean }) {
   return (
     <div class="text-center">
-      <div class:list={[
-        'text-5xl md:text-6xl lg:text-7xl font-extrabold tabular-nums leading-none',
-        props.urgent ? 'text-fpl-pink' : 'text-fpl-green',
-      ]}>
+      <div class={`text-5xl md:text-6xl lg:text-7xl font-extrabold tabular-nums leading-none ${props.urgent ? 'text-fpl-pink' : 'text-fpl-green'}`}>
         {String(props.value).padStart(2, '0')}
       </div>
       <div class="text-xs md:text-sm text-white/70 mt-1.5 tracking-widest">{props.label}</div>

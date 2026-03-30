@@ -72,7 +72,7 @@ const perGwIds = predictions[0]?.predicted_per_gw?.map(g => g.gw_id) ?? [];
       <HeroCard rank={i + 1} accent={i === 0 ? 'border-fpl-gold' : 'border-fpl-green'}>
         <a href={`/players/${p.player_id}`} class="block">
           <div class="flex items-center gap-3 mb-3">
-            <img src={p.shirt_url} alt="" class="w-12 h-12 shrink-0" loading="lazy" />
+            <img src={p.shirt_url || ''} alt="" class="w-12 h-12 shrink-0" loading="lazy" />
             <div>
               <div class="flex items-center gap-2">
                 <span class="text-white font-bold text-lg">{p.web_name}</span>
@@ -122,7 +122,7 @@ const perGwIds = predictions[0]?.predicted_per_gw?.map(g => g.gw_id) ?? [];
               <td class="py-2 px-3 text-gray-500">{i + 4}</td>
               <td class="py-2 px-3">
                 <a href={`/players/${p.player_id}`} class="flex items-center gap-2">
-                  <img src={p.shirt_url} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
+                  <img src={p.shirt_url || ''} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
                   <div>
                     <span class="link-cyan font-medium">{p.web_name}</span>
                     <span class="text-gray-500 text-xs ml-1">{p.team_short_name}</span>

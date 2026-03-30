@@ -5,6 +5,7 @@ Intentionally simple — 10 features, refit after each GW in under 1s.
 """
 
 import logging
+import threading
 from decimal import Decimal
 
 import numpy as np
@@ -19,20 +20,14 @@ from app.models.player_form_cache import PlayerFormCache
 from app.models.player_gw_stats import PlayerGWStats
 from app.models.player_gw_xg import PlayerSeasonXG
 from app.models.team import Team
+from app.services.fpl_urls import shirt_url
 
 logger = logging.getLogger(__name__)
 
-FPL_SHIRTS = "https://fantasy.premierleague.com/dist/img/shirts/standard"
-
-# Module-level model cache
+# Module-level model cache, guarded by _model_lock
+_model_lock = threading.Lock()
 _model: Ridge | None = None
 _scaler: StandardScaler | None = None
-
-
-def _shirt_url(team_code: int, position: int) -> str:
-    if position == 1:  # GK
-        return f"{FPL_SHIRTS}/shirt_{team_code}_1-110.webp"
-    return f"{FPL_SHIRTS}/shirt_{team_code}-110.webp"
 
 
 def train_model() -> tuple[Ridge, StandardScaler]:
@@ -142,8 +137,9 @@ def train_model() -> tuple[Ridge, StandardScaler]:
     model = Ridge(alpha=1.0)
     model.fit(X_scaled, y)
 
-    _model = model
-    _scaler = scaler
+    with _model_lock:
+        _model = model
+        _scaler = scaler
 
     logger.info(
         "Points model trained on %d samples from GWs %s, R²=%.3f",
@@ -158,10 +154,11 @@ def predict_gw(gw_id: int) -> list[dict]:
     """Generate predicted points for all active players for a given GW."""
     global _model, _scaler
 
-    if _model is None or _scaler is None:
-        train_model()
+    with _model_lock:
+        if _model is None or _scaler is None:
+            train_model()
 
-    if _model is None:
+    if _model is None or _scaler is None:
         return []
 
     with sync_session_factory() as session:
@@ -243,7 +240,7 @@ def predict_gw(gw_id: int) -> list[dict]:
             {
                 "player_id": player.id,
                 "web_name": player.web_name,
-                "shirt_url": _shirt_url(team_code, player.position),
+                "shirt_url": shirt_url(team_code, player.position),
                 "team_short_name": team_short,
                 "position": player.position,
                 "predicted_points": round(Decimal(str(total_predicted)), 1),
@@ -263,10 +260,11 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
     """
     global _model, _scaler
 
-    if _model is None or _scaler is None:
-        train_model()
+    with _model_lock:
+        if _model is None or _scaler is None:
+            train_model()
 
-    if _model is None:
+    if _model is None or _scaler is None:
         return []
 
     with sync_session_factory() as session:
@@ -305,9 +303,7 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
 
         # Fixtures for all upcoming GWs
         all_fixtures = (
-            session.query(Fixture)
-            .filter(Fixture.gameweek_id.in_(gw_ids))
-            .all()
+            session.query(Fixture).filter(Fixture.gameweek_id.in_(gw_ids)).all()
         )
 
     # Map: gw_id -> team_id -> list[Fixture]
@@ -339,9 +335,11 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
             gw_predicted = 0.0
             for fix in player_fixtures:
                 is_home = fix.home_team_id == player.team_id
-                fdr = float(
-                    fix.home_difficulty if is_home else fix.away_difficulty
-                ) if fix.home_difficulty is not None else 3.0
+                fdr = (
+                    float(fix.home_difficulty if is_home else fix.away_difficulty)
+                    if fix.home_difficulty is not None
+                    else 3.0
+                )
 
                 features = np.array(
                     [
@@ -366,10 +364,12 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
                 gw_predicted += pred
 
             # Players with no fixtures in a GW (blank GW) score 0 for that GW
-            per_gw.append({
-                "gw_id": gw_id,
-                "predicted_points": round(Decimal(str(gw_predicted)), 1),
-            })
+            per_gw.append(
+                {
+                    "gw_id": gw_id,
+                    "predicted_points": round(Decimal(str(gw_predicted)), 1),
+                }
+            )
             total_predicted += gw_predicted
 
         if total_predicted == 0.0:
@@ -379,7 +379,7 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
             {
                 "player_id": player.id,
                 "web_name": player.web_name,
-                "shirt_url": _shirt_url(team_code, player.position),
+                "shirt_url": shirt_url(team_code, player.position),
                 "team_short_name": team_short,
                 "position": player.position,
                 "predicted_points": round(Decimal(str(total_predicted)), 1),

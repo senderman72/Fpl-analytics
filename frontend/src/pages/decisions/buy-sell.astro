@@ -22,7 +22,7 @@ const rest = buys.slice(3);
       <HeroCard rank={i + 1} accent={i === 0 ? 'border-fpl-green' : 'border-fpl-cyan'}>
         <a href={`/players/${b.player_id}`} class="block">
           <div class="flex items-center gap-3 mb-3">
-            <img src={b.shirt_url} alt="" class="w-12 h-12 shrink-0" loading="lazy" />
+            <img src={b.shirt_url || ''} alt="" class="w-12 h-12 shrink-0" loading="lazy" />
             <div>
               <div class="flex items-center gap-2">
                 <span class="text-white font-bold text-lg">{b.web_name}</span>
@@ -51,7 +51,7 @@ const rest = buys.slice(3);
       <a href={`/players/${b.player_id}`} class="card p-4 block hover:bg-white/3 transition-colors">
         <div class="flex items-center gap-3 mb-2">
           <span class="text-gray-500 text-xs w-5 text-right shrink-0">{i + 4}</span>
-          <img src={b.shirt_url} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
+          <img src={b.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
           <div class="flex-1 min-w-0">
             <div class="text-white font-medium truncate">{b.web_name} <span class="text-gray-500 text-xs">{b.team_short_name}</span></div>
             <div class="text-xs text-gray-400">{formatCost(b.now_cost)} · <PositionBadge position={b.position} /></div>
@@ -95,7 +95,7 @@ const rest = buys.slice(3);
               <td class="py-2 px-3 text-gray-500">{i + 4}</td>
               <td class="py-2 px-3">
                 <a href={`/players/${b.player_id}`} class="flex items-center gap-2">
-                  <img src={b.shirt_url} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
+                  <img src={b.shirt_url || ''} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
                   <div>
                     <span class="link-cyan font-medium">{b.web_name}</span>
                     <span class="text-gray-500 text-xs ml-1">{b.team_short_name}</span>

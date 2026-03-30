@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from decimal import Decimal
 
 from sqlalchemy import func, update
 from sqlalchemy.dialects.postgresql import insert
@@ -132,7 +133,9 @@ def sync_player_history() -> dict[str, int]:
             try:
                 summary = asyncio.run(fetch_player_summary(pid))
             except Exception:
-                logger.warning("Failed to fetch summary for player %d", pid)
+                logger.warning(
+                    "Failed to fetch summary for player %d", pid, exc_info=True
+                )
                 failed += 1
                 continue
 
@@ -308,7 +311,6 @@ def recompute_form_cache() -> dict[str, int]:
 
     Reads from player_gw_stats and player_season_xg, writes to player_form_cache.
     """
-    from decimal import Decimal
 
     with sync_session_factory() as session:
         # Get current GW

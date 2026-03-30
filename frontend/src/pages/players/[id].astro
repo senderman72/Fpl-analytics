@@ -37,7 +37,7 @@ const maxPoints = Math.max(...history.map(h => h.total_points), 1);
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
       <!-- Player shirt + team badge -->
       <div class="relative shrink-0">
-        <img src={player.shirt_url} alt={player.web_name} class="w-24 h-24 md:w-28 md:h-28" loading="lazy" />
+        <img src={player.shirt_url || ''} alt={player.web_name} class="w-24 h-24 md:w-28 md:h-28" loading="lazy" />
         {player.team_badge_url && (
           <img src={player.team_badge_url} alt={player.team_short_name ?? ''} class="absolute -bottom-2 -right-2 w-9 h-9 drop-shadow-md" loading="lazy" />
         )}

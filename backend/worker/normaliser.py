@@ -73,8 +73,7 @@ def normalise_gameweek(raw: dict[str, Any]) -> dict[str, Any]:
 
 def _is_penalty_taker(raw: dict[str, Any]) -> bool:
     """Infer penalty taker status from FPL API fields."""
-    order = raw.get("penalties_order")
-    return order is not None and order == 1
+    return raw.get("penalties_order") == 1
 
 
 def _is_set_piece_taker(raw: dict[str, Any]) -> bool:
@@ -144,7 +143,7 @@ def normalise_price_snapshot(player_id: int, raw: dict[str, Any]) -> dict[str, A
     """Map bootstrap player data to a daily player_prices row."""
     return {
         "player_id": player_id,
-        "recorded_at": dt.date.today(),
+        "recorded_at": dt.datetime.now(dt.UTC).date(),
         "cost": raw["now_cost"],
         "transfers_in_event": raw.get("transfers_in_event", 0),
         "transfers_out_event": raw.get("transfers_out_event", 0),

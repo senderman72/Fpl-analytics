@@ -3,7 +3,7 @@
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
@@ -21,23 +21,9 @@ from app.schemas.player import (
     PlayerGWHistory,
     PlayerSummary,
 )
+from app.services.fpl_urls import badge_url, shirt_url
 
 router = APIRouter(prefix="/players", tags=["players"])
-
-PL_CDN = "https://resources.premierleague.com/premierleague"
-FPL_SHIRTS = "https://fantasy.premierleague.com/dist/img/shirts/standard"
-
-
-def _shirt_url(team_code: int, position: int) -> str:
-    if position == 1:  # GK
-        return f"{FPL_SHIRTS}/shirt_{team_code}_1-110.webp"
-    return f"{FPL_SHIRTS}/shirt_{team_code}-110.webp"
-
-
-def _badge_url(team_code: int) -> str | None:
-    if not team_code:
-        return None
-    return f"{PL_CDN}/badges/100/t{team_code}.png"
 
 
 @router.get("", response_model=APIResponse[list[PlayerSummary]])
@@ -92,8 +78,8 @@ async def list_players(
                 news=player.news,
                 is_penalty_taker=player.is_penalty_taker,
                 is_set_piece_taker=player.is_set_piece_taker,
-                shirt_url=_shirt_url(team_code, player.position),
-                team_badge_url=_badge_url(team_code),
+                shirt_url=shirt_url(team_code, player.position),
+                team_badge_url=badge_url(team_code),
                 form_points=form.total_points if form else None,
                 pts_per_game=form.pts_per_game if form else None,
                 xgi_per_90=form.xgi_per_90 if form else None,
@@ -108,7 +94,12 @@ async def list_players(
 
     def sort_key(p: PlayerSummary) -> Decimal:
         val = getattr(p, sort_by, None)
-        return Decimal(str(val)) if val is not None else Decimal("-999")
+        if val is None:
+            return Decimal("-999")
+        try:
+            return Decimal(str(val))
+        except Exception:
+            return Decimal("-999")
 
     players.sort(key=sort_key, reverse=True)
     total = len(players)
@@ -147,13 +138,11 @@ async def get_player(
     xg = xg_result.scalars().first()
 
     # Season actuals from GW stats
-    from sqlalchemy import func as sa_func
-
     season_result = await session.execute(
         select(
-            sa_func.sum(PlayerGWStats.goals_scored),
-            sa_func.sum(PlayerGWStats.assists),
-            sa_func.sum(PlayerGWStats.total_points),
+            func.sum(PlayerGWStats.goals_scored),
+            func.sum(PlayerGWStats.assists),
+            func.sum(PlayerGWStats.total_points),
         ).where(PlayerGWStats.player_id == player_id)
     )
     season_row = season_result.first()
@@ -176,8 +165,8 @@ async def get_player(
             news=player.news,
             is_penalty_taker=player.is_penalty_taker,
             is_set_piece_taker=player.is_set_piece_taker,
-            shirt_url=_shirt_url(team_code, player.position),
-            team_badge_url=_badge_url(team_code),
+            shirt_url=shirt_url(team_code, player.position),
+            team_badge_url=badge_url(team_code),
             understat_id=player.understat_id,
             form_points=form.total_points if form else None,
             pts_per_game=form.pts_per_game if form else None,

@@ -152,11 +152,8 @@ def train_model() -> tuple[Ridge, StandardScaler]:
 
 def predict_gw(gw_id: int) -> list[dict]:
     """Generate predicted points for all active players for a given GW."""
-    global _model, _scaler
-
-    with _model_lock:
-        if _model is None or _scaler is None:
-            train_model()
+    if _model is None or _scaler is None:
+        train_model()
 
     if _model is None or _scaler is None:
         return []
@@ -260,9 +257,8 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
     """
     global _model, _scaler
 
-    with _model_lock:
-        if _model is None or _scaler is None:
-            train_model()
+    if _model is None or _scaler is None:
+        train_model()
 
     if _model is None or _scaler is None:
         return []

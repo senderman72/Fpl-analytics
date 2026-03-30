@@ -19,6 +19,10 @@ engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
     pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=5,
+    pool_timeout=30,
+    pool_recycle=300,
 )
 
 async_session_factory = async_sessionmaker(
@@ -32,6 +36,10 @@ sync_engine = create_engine(
     settings.database_url.replace("+asyncpg", "+psycopg2"),
     echo=settings.debug,
     pool_pre_ping=True,
+    pool_size=3,
+    max_overflow=2,
+    pool_timeout=10,
+    pool_recycle=300,
 )
 
 sync_session_factory = sessionmaker(sync_engine, expire_on_commit=False)

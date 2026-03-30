@@ -1,5 +1,6 @@
-const CACHE_NAME = 'fpl-v1';
+const CACHE_NAME = 'fpl-v2';
 const PRECACHE_URLS = ['/', '/manifest.json', '/favicon.svg'];
+const NETWORK_TIMEOUT_MS = 10000;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -26,6 +27,9 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
 
+  // Never intercept API routes — data must always be fresh from the server
+  if (url.pathname.startsWith('/api/')) return;
+
   // Cache-first for Astro static assets (content-hashed, immutable)
   if (url.pathname.startsWith('/_astro/')) {
     event.respondWith(cacheFirst(request));
@@ -38,7 +42,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for API routes and HTML pages (data freshness)
+  // Network-first for HTML pages
   event.respondWith(networkFirst(request));
 });
 
@@ -57,7 +61,7 @@ async function cacheFirst(request) {
 async function networkFirst(request) {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
+    const timeout = setTimeout(() => controller.abort(), NETWORK_TIMEOUT_MS);
     const response = await fetch(request, { signal: controller.signal });
     clearTimeout(timeout);
     if (response.ok) {

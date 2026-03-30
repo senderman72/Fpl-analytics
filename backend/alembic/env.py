@@ -7,7 +7,7 @@ import app.models  # noqa: F401  # Register all models with Base.metadata
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import get_settings
 from app.core.database import Base, _async_url
@@ -15,12 +15,17 @@ from app.core.database import Base, _async_url
 config = context.config
 settings = get_settings()
 
-config.set_main_option("sqlalchemy.url", _async_url(settings.database_url))
+_db_url = _async_url(settings.database_url)
+config.set_main_option("sqlalchemy.url", _db_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
+
+# Railway internal Postgres doesn't use SSL
+_needs_ssl = "sslmode=" in _db_url or "ssl=" in _db_url
+_connect_args: dict = {} if _needs_ssl else {"ssl": False}
 
 
 def run_migrations_offline() -> None:
@@ -42,15 +47,10 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    db_url = config.get_main_option("sqlalchemy.url") or ""
-    needs_ssl = "sslmode=" in db_url or "ssl=" in db_url
-    connect_args: dict = {} if needs_ssl else {"ssl": False}
-
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    connectable = create_async_engine(
+        _db_url,
         poolclass=pool.NullPool,
-        connect_args=connect_args,
+        connect_args=_connect_args,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

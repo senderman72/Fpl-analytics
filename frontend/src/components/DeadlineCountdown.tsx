@@ -38,14 +38,14 @@ export default function DeadlineCountdown(props: Props) {
     <Show when={time()} fallback={<span class="text-fpl-pink font-bold">DEADLINE PASSED</span>}>
       {(t) => (
         <div>
-          <div classList={{'flex gap-4 md:gap-6 justify-center': true, 'animate-pulse_soft': !!urgent()}}>
+          <div classList={{'flex gap-3 md:gap-5 justify-center items-center': true, 'animate-pulse_soft': !!urgent()}}>
             <Unit value={t().days} label="DAYS" />
             <Separator />
             <Unit value={t().hours} label="HRS" />
             <Separator />
             <Unit value={t().minutes} label="MIN" />
             <Separator />
-            <Unit value={t().seconds} label="SEC" urgent={!!urgent()} />
+            <Unit value={t().seconds} label="SEC" />
           </div>
           <div class="text-sm md:text-base text-white font-medium mt-3 text-center">{localDeadline()}</div>
         </div>
@@ -54,17 +54,17 @@ export default function DeadlineCountdown(props: Props) {
   );
 }
 
-function Unit(props: { value: number; label: string; urgent?: boolean }) {
+function Unit(props: { value: number; label: string }) {
   return (
     <div class="text-center">
-      <div class={`text-5xl md:text-6xl lg:text-7xl font-extrabold tabular-nums leading-none ${props.urgent ? 'text-fpl-pink' : 'text-fpl-green'}`}>
+      <div class="text-3xl sm:text-4xl md:text-5xl font-extrabold tabular-nums leading-none text-fpl-green">
         {String(props.value).padStart(2, '0')}
       </div>
-      <div class="text-xs md:text-sm text-white/70 mt-1.5 tracking-widest">{props.label}</div>
+      <div class="text-[10px] sm:text-xs text-white/70 mt-1 tracking-widest">{props.label}</div>
     </div>
   );
 }
 
 function Separator() {
-  return <span class="text-4xl md:text-5xl text-white/30 font-light self-start mt-0.5">:</span>;
+  return <span class="text-2xl sm:text-3xl md:text-4xl text-fpl-green/40 font-light">:</span>;
 }

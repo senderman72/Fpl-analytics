@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# Delete .env if it got copied into the container — Railway sets env vars directly
+rm -f .env
+
+# Debug: print connection target (host only)
+echo "DATABASE_URL=${DATABASE_URL:-(NOT SET)}" | sed 's/:\/\/[^@]*@/:\/\/***@/'
+
 # Run Alembic migrations on startup
 uv run alembic upgrade head
 

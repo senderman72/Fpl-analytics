@@ -36,6 +36,11 @@ htmlcov/
 pgdata/
 redisdata/
 
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vercel/
+
 # OS
 .DS_Store
 Thumbs.db

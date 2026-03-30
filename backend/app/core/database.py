@@ -14,13 +14,32 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+
+def _async_url(url: str) -> str:
+    """Ensure the URL uses the asyncpg driver."""
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
+def _sync_url(url: str) -> str:
+    """Ensure the URL uses the psycopg2 driver."""
+    if url.startswith("postgresql+asyncpg://"):
+        return url.replace("+asyncpg", "+psycopg2", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    return url
+
+
+_is_prod = settings.is_production
+
 # --- Async (FastAPI) ---
 engine = create_async_engine(
-    settings.database_url,
+    _async_url(settings.database_url),
     echo=settings.debug,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=5,
+    pool_size=5 if _is_prod else 10,
+    max_overflow=3 if _is_prod else 5,
     pool_timeout=30,
     pool_recycle=300,
 )
@@ -33,7 +52,7 @@ async_session_factory = async_sessionmaker(
 
 # --- Sync (Celery workers) ---
 sync_engine = create_engine(
-    settings.database_url.replace("+asyncpg", "+psycopg2"),
+    _sync_url(settings.database_url),
     echo=settings.debug,
     pool_pre_ping=True,
     pool_size=3,

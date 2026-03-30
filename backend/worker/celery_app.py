@@ -1,5 +1,7 @@
 """Celery application instance."""
 
+import ssl
+
 from celery import Celery
 
 from app.core.config import get_settings
@@ -22,5 +24,12 @@ celery_app.conf.update(
     task_acks_late=True,
     worker_prefetch_multiplier=1,
 )
+
+# Enable TLS when using rediss:// (Railway, Upstash, etc.)
+if settings.celery_broker_url.startswith("rediss://"):
+    celery_app.conf.update(
+        broker_use_ssl={"ssl_cert_reqs": ssl.CERT_REQUIRED},
+        redis_backend_use_ssl={"ssl_cert_reqs": ssl.CERT_REQUIRED},
+    )
 
 celery_app.autodiscover_tasks(["worker"])

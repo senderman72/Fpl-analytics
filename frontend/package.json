@@ -14,7 +14,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@astrojs/node": "^10.0.3",
+    "@astrojs/vercel": "^10.0.0",
     "@astrojs/solid-js": "^6.0.1",
     "@tanstack/solid-query": "^5.95.2",
     "@unocss/astro": "^66.6.7",

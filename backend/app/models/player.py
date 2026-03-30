@@ -1,7 +1,6 @@
 """Player model — all FPL elements."""
 
 from datetime import datetime
-
 from decimal import Decimal
 
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, SmallInteger, String, Text

@@ -37,7 +37,8 @@ async def list_gameweeks(
             GameweekOut(
                 id=gw.id,
                 name=gw.name,
-                deadline_time=gw.deadline_time.isoformat() + ("" if gw.deadline_time.tzinfo else "Z"),
+                deadline_time=gw.deadline_time.isoformat()
+                + ("" if gw.deadline_time.tzinfo else "Z"),
                 is_current=gw.is_current,
                 is_next=gw.is_next,
                 is_finished=gw.is_finished,
@@ -86,8 +87,16 @@ async def list_fixtures(
                 away_team_id=f.away_team_id,
                 home_short_name=team_info.get(f.home_team_id, (None, None))[0],
                 away_short_name=team_info.get(f.away_team_id, (None, None))[0],
-                home_badge_url=f"{pl_cdn}/badges/100/t{team_info[f.home_team_id][1]}.png" if f.home_team_id in team_info and team_info[f.home_team_id][1] else None,
-                away_badge_url=f"{pl_cdn}/badges/100/t{team_info[f.away_team_id][1]}.png" if f.away_team_id in team_info and team_info[f.away_team_id][1] else None,
+                home_badge_url=(
+                    f"{pl_cdn}/badges/100/t{team_info[f.home_team_id][1]}.png"
+                    if f.home_team_id in team_info and team_info[f.home_team_id][1]
+                    else None
+                ),
+                away_badge_url=(
+                    f"{pl_cdn}/badges/100/t{team_info[f.away_team_id][1]}.png"
+                    if f.away_team_id in team_info and team_info[f.away_team_id][1]
+                    else None
+                ),
                 kickoff_time=f.kickoff_time.isoformat() if f.kickoff_time else None,
                 started=f.started,
                 finished=f.finished,
@@ -141,8 +150,14 @@ async def get_live_gw(
                 fixture_id=f.id,
                 home_team_short=home_info[0],
                 away_team_short=away_info[0],
-                home_badge_url=f"{pl_cdn}/badges/100/t{home_info[1]}.png" if home_info[1] else None,
-                away_badge_url=f"{pl_cdn}/badges/100/t{away_info[1]}.png" if away_info[1] else None,
+                home_badge_url=(
+                    f"{pl_cdn}/badges/100/t{home_info[1]}.png"
+                    if home_info[1] else None
+                ),
+                away_badge_url=(
+                    f"{pl_cdn}/badges/100/t{away_info[1]}.png"
+                    if away_info[1] else None
+                ),
                 home_goals=f.home_goals or 0,
                 away_goals=f.away_goals or 0,
                 started=f.started,

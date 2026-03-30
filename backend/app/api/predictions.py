@@ -48,5 +48,9 @@ async def get_upcoming_predictions(
 
     return APIResponse(
         data=[PredictionOut(**p) for p in predictions[:limit]],
-        meta={"horizon": actual_horizon, "gameweek_ids": gw_ids, "total": len(predictions)},
+        meta={
+            "horizon": actual_horizon,
+            "gameweek_ids": gw_ids,
+            "total": len(predictions),
+        },
     )

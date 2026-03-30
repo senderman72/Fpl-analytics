@@ -34,6 +34,10 @@ function isActive(href: string) {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="FPL Analytics — data-driven Fantasy Premier League tools: captain picks, transfer advice, points predictions, and fixture analysis." />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#37003c" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>{title} | FPL Analytics</title>
     <style is:global>
       html { scroll-behavior: smooth; }
@@ -169,5 +173,10 @@ function isActive(href: string) {
         </details>
       </div>
     </nav>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+      }
+    </script>
   </body>
 </html>

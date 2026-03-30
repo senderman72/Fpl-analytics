@@ -4,7 +4,7 @@ import logging
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
@@ -40,8 +40,10 @@ async def get_my_team(
     # 1. Get manager info from FPL API
     try:
         manager = await fetch_manager_info(manager_id)
-    except Exception:
-        raise HTTPException(status_code=404, detail="Manager not found")
+    except Exception as exc:
+        raise HTTPException(
+            status_code=404, detail="Manager not found"
+        ) from exc
 
     current_event = manager.get("current_event")
     if not current_event:
@@ -50,8 +52,11 @@ async def get_my_team(
     # 2. Get picks for current/latest GW
     try:
         picks_data = await fetch_manager_picks(manager_id, current_event)
-    except Exception:
-        raise HTTPException(status_code=404, detail="Picks not found for this gameweek")
+    except Exception as exc:
+        raise HTTPException(
+            status_code=404,
+            detail="Picks not found for this gameweek",
+        ) from exc
 
     picks = picks_data.get("picks", [])
     entry_history = picks_data.get("entry_history", {})

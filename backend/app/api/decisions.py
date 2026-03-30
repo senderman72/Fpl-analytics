@@ -415,7 +415,9 @@ def _buy_recommendation(
     if not parts:
         parts.append("steady option")
 
-    return parts[0].capitalize() + (", " + ", ".join(parts[1:]) if len(parts) > 1 else "")
+    head = parts[0].capitalize()
+    tail = ", ".join(parts[1:])
+    return f"{head}, {tail}" if tail else head
 
 
 def _captain_recommendation(

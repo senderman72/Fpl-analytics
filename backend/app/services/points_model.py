@@ -57,7 +57,10 @@ def train_model() -> tuple[Ridge, StandardScaler]:
         # Train only on last 6 GWs
         stats = (
             session.query(PlayerGWStats)
-            .filter(PlayerGWStats.minutes > 0, PlayerGWStats.gameweek_id.in_(recent_gw_ids))
+            .filter(
+                PlayerGWStats.minutes > 0,
+                PlayerGWStats.gameweek_id.in_(recent_gw_ids),
+            )
             .all()
         )
 

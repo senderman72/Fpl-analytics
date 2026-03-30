@@ -46,7 +46,7 @@ export default function ShareButtons(props: Props) {
 
   return (
     <div class="flex flex-wrap items-center gap-2">
-      <span class="text-gray-500 text-xs">Share:</span>
+      <span class="text-gray-400 text-xs">Share:</span>
 
       {/* X / Twitter */}
       <button

@@ -51,7 +51,7 @@ const totalBonus = history.reduce((sum, h) => sum + h.bonus, 0);
     <div class="flex flex-col sm:flex-row sm:items-center gap-4">
       <!-- Player shirt + team badge -->
       <div class="relative shrink-0">
-        <img src={player.shirt_url || ''} alt={player.web_name} class="w-24 h-24 md:w-28 md:h-28" loading="lazy" />
+        <img src={player.shirt_url || ''} alt={player.web_name} class="w-24 h-24 md:w-28 md:h-28 object-contain" width="110" height="140" loading="lazy" />
         {player.team_badge_url && (
           <img src={player.team_badge_url} alt={player.team_short_name ?? ''} class="absolute -bottom-2 -right-2 w-9 h-9 drop-shadow-md" loading="lazy" />
         )}
@@ -200,10 +200,10 @@ const totalBonus = history.reduce((sum, h) => sum + h.bonus, 0);
             <span class:list={['text-lg font-bold tabular-nums', h.total_points >= 10 ? 'text-fpl-green' : 'text-white']}>{h.total_points} pts</span>
           </div>
           <div class="grid grid-cols-4 gap-2 text-center">
-            <div><div class="text-[11px] text-gray-500">Mins</div><div class="text-white text-sm font-medium tabular-nums">{h.minutes}</div></div>
-            <div><div class="text-[11px] text-gray-500">Goals</div><div class="text-white text-sm font-medium tabular-nums">{h.goals_scored || '-'}</div></div>
-            <div><div class="text-[11px] text-gray-500">Assists</div><div class="text-white text-sm font-medium tabular-nums">{h.assists || '-'}</div></div>
-            <div><div class="text-[11px] text-gray-500">Bonus</div><div class="text-white text-sm font-medium tabular-nums">{h.bonus || '-'}</div></div>
+            <div><div class="text-[11px] text-gray-400">Mins</div><div class="text-white text-sm font-medium tabular-nums">{h.minutes}</div></div>
+            <div><div class="text-[11px] text-gray-400">Goals</div><div class="text-white text-sm font-medium tabular-nums">{h.goals_scored || '-'}</div></div>
+            <div><div class="text-[11px] text-gray-400">Assists</div><div class="text-white text-sm font-medium tabular-nums">{h.assists || '-'}</div></div>
+            <div><div class="text-[11px] text-gray-400">Bonus</div><div class="text-white text-sm font-medium tabular-nums">{h.bonus || '-'}</div></div>
           </div>
         </div>
       ))}

@@ -71,7 +71,7 @@ const deadlineStr = deadline
               <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-gray-500/15 text-gray-400 border border-gray-500/30">FT</span>
             )}
           </div>
-          <span class="text-xs text-gray-500">Deadline: {deadlineStr}</span>
+          <span class="text-xs text-gray-400">Deadline: {deadlineStr}</span>
         </div>
 
         {nextGWNav ? (
@@ -91,7 +91,7 @@ const deadlineStr = deadline
 
       <!-- Fixtures grid -->
       {fixtures.length === 0 ? (
-        <div class="card p-8 text-center text-gray-500 text-sm">No fixtures scheduled for this gameweek</div>
+        <div class="card p-8 text-center text-gray-400 text-sm">No fixtures scheduled for this gameweek</div>
       ) : (
         <div class="flex flex-col gap-3 max-w-2xl mx-auto">
           {fixtures.map(f => {

@@ -33,7 +33,7 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
       <div class="space-y-3 mb-5">
         {/* Search row */}
         <div class="relative">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -101,11 +101,11 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
             {(p) => (
               <a href={`/players/${slugify(p.id, p.first_name, p.second_name)}`} class="card p-4 block hover:bg-white/3 transition-colors">
                 <div class="flex items-center gap-3 mb-2">
-                  <img src={p.shirt_url || ''} alt="" class="w-9 h-9 shrink-0" loading="lazy" />
+                  <img src={p.shirt_url || ''} alt="" class="w-9 h-9 shrink-0 object-contain" width="110" height="140" loading="lazy" />
                   <div class="flex-1 min-w-0">
                     <div class="text-white font-medium truncate">
                       {p.web_name}
-                      <span class="text-gray-500 text-xs ml-1">{p.team_short_name}</span>
+                      <span class="text-gray-400 text-xs ml-1">{p.team_short_name}</span>
                       <Show when={p.is_penalty_taker}>
                         <span class="ml-1 text-[11px] font-semibold text-fpl-green bg-fpl-green/10 px-1 rounded">P</span>
                       </Show>
@@ -125,22 +125,22 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
                   </div>
                   <div class="text-right shrink-0">
                     <div class="text-fpl-green font-bold">{p.form_points ?? '-'}</div>
-                    <div class="text-[11px] text-gray-500">form</div>
+                    <div class="text-[11px] text-gray-400">form</div>
                   </div>
                 </div>
                 <div class="grid grid-cols-3 gap-2 ml-12 text-center">
                   <div>
-                    <div class="text-[11px] text-gray-500">xGI/90</div>
+                    <div class="text-[11px] text-gray-400">xGI/90</div>
                     <div class="text-white font-bold text-sm">{p.xgi_per_90 ?? '-'}</div>
                   </div>
                   <div>
-                    <div class="text-[11px] text-gray-500">Own%</div>
+                    <div class="text-[11px] text-gray-400">Own%</div>
                     <div class={`font-bold text-sm ${Number(p.selected_by_percent ?? 0) > 30 ? 'text-fpl-green' : Number(p.selected_by_percent ?? 0) < 5 ? 'text-fpl-pink' : 'text-white'}`}>
                       {p.selected_by_percent ?? '-'}%
                     </div>
                   </div>
                   <div>
-                    <div class="text-[11px] text-gray-500">Transfers</div>
+                    <div class="text-[11px] text-gray-400">Transfers</div>
                     {(() => {
                       const net = (p.transfers_in_event ?? 0) - (p.transfers_out_event ?? 0);
                       return (
@@ -182,7 +182,9 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
                           <img
                             src={p.shirt_url || ''}
                             alt=""
-                            class="w-9 h-9 shrink-0"
+                            class="w-9 h-9 shrink-0 object-contain"
+                            width="110"
+                            height="140"
                             loading="lazy"
                           />
                           <a href={`/players/${slugify(p.id, p.first_name, p.second_name)}`} class="text-fpl-cyan hover:underline decoration-fpl-cyan/40 underline-offset-2 font-medium" onClick={(e) => e.stopPropagation()}>

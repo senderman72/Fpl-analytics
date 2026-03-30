@@ -8,7 +8,7 @@ function PlayerCard(props: { pick: MyTeamPick; compact?: boolean }) {
   return (
     <a href={`/players/${p.player_id}`} class="flex flex-col items-center group">
       <div class="relative">
-        <img src={p.shirt_url ?? ''} alt="" class="w-8 h-8 sm:w-10 sm:h-10 md:w-14 md:h-14" />
+        <img src={p.shirt_url ?? ''} alt="" class="w-8 h-8 sm:w-10 sm:h-10 md:w-14 md:h-14 object-contain" width="110" height="140" />
         {p.is_captain && (
           <span class="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-fpl-gold text-fpl-dark text-[9px] sm:text-[11px] font-extrabold flex items-center justify-center">C</span>
         )}
@@ -111,7 +111,7 @@ export default function MyTeamView(props: { initialId?: number }) {
           </button>
         </div>
         <details class="mt-3">
-          <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300 transition-colors">
+          <summary class="text-xs text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
             How do I find my FPL ID?
           </summary>
           <div class="mt-2 text-xs text-gray-400 space-y-1 pl-3 border-l-2 border-gray-700">
@@ -150,19 +150,19 @@ export default function MyTeamView(props: { initialId?: number }) {
                 <div class="grid grid-cols-4 gap-2 text-center">
                   <div>
                     <div class="text-fpl-green font-extrabold text-base sm:text-lg">{t.overall_points}</div>
-                    <div class="text-[10px] sm:text-[11px] text-gray-500 uppercase">Total Pts</div>
+                    <div class="text-[10px] sm:text-[11px] text-gray-400 uppercase">Total Pts</div>
                   </div>
                   <div>
                     <div class="text-white font-extrabold text-base sm:text-lg">{(t.overall_rank ?? 0).toLocaleString()}</div>
-                    <div class="text-[10px] sm:text-[11px] text-gray-500 uppercase">Rank</div>
+                    <div class="text-[10px] sm:text-[11px] text-gray-400 uppercase">Rank</div>
                   </div>
                   <div>
                     <div class="text-white font-bold text-base sm:text-lg">{t.gameweek_points}</div>
-                    <div class="text-[10px] sm:text-[11px] text-gray-500 uppercase">GW Pts</div>
+                    <div class="text-[10px] sm:text-[11px] text-gray-400 uppercase">GW Pts</div>
                   </div>
                   <div>
                     <div class="text-gray-300 font-bold text-base sm:text-lg">{formatCost(t.bank)}</div>
-                    <div class="text-[10px] sm:text-[11px] text-gray-500 uppercase">Bank</div>
+                    <div class="text-[10px] sm:text-[11px] text-gray-400 uppercase">Bank</div>
                   </div>
                 </div>
               </div>
@@ -192,7 +192,7 @@ export default function MyTeamView(props: { initialId?: number }) {
 
               {/* Bench */}
               <div class="card p-3 sm:p-4">
-                <div class="text-xs text-gray-500 uppercase tracking-wider mb-2 sm:mb-3">Bench</div>
+                <div class="text-xs text-gray-400 uppercase tracking-wider mb-2 sm:mb-3">Bench</div>
                 <div class="flex justify-center gap-2 sm:gap-4 md:gap-6">
                   <For each={t.bench}>
                     {(p) => <PlayerCard pick={p} compact />}

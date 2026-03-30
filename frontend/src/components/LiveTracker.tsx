@@ -104,10 +104,10 @@ export default function LiveTracker(props: { currentGwId: number }) {
             </span>
           )}
           {gwStatus() === 'finished' && (
-            <span class="text-gray-500">All matches finished</span>
+            <span class="text-gray-400">All matches finished</span>
           )}
           {gwStatus() === 'upcoming' && (
-            <span class="text-gray-500">Matches not started yet</span>
+            <span class="text-gray-400">Matches not started yet</span>
           )}
         </div>
         <Show when={!data.loading} fallback={<span>Loading...</span>}>
@@ -135,7 +135,7 @@ export default function LiveTracker(props: { currentGwId: number }) {
                       </div>
                       <div class="text-center shrink-0 min-w-[60px]">
                         <Show when={f.started} fallback={
-                          <span class="text-gray-500 text-sm">vs</span>
+                          <span class="text-gray-400 text-sm">vs</span>
                         }>
                           <span class="text-white font-extrabold text-xl tabular-nums">
                             {f.home_goals} - {f.away_goals}
@@ -143,7 +143,7 @@ export default function LiveTracker(props: { currentGwId: number }) {
                         </Show>
                         <div class="text-[11px] mt-0.5">
                           {f.finished
-                            ? <span class="text-gray-500">FT</span>
+                            ? <span class="text-gray-400">FT</span>
                             : f.started
                               ? <span class="text-fpl-green font-bold">LIVE</span>
                               : <span class="text-gray-600">-</span>
@@ -167,8 +167,8 @@ export default function LiveTracker(props: { currentGwId: number }) {
                   {(p, i) => (
                     <a href={`/players/${p.player_id}`} class="card p-3 block hover:bg-white/3 transition-colors">
                       <div class="flex items-center gap-3">
-                        <span class="text-gray-500 text-xs w-5 text-right shrink-0">{i() + 1}</span>
-                        <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0" loading="lazy" />
+                        <span class="text-gray-400 text-xs w-5 text-right shrink-0">{i() + 1}</span>
+                        <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0 object-contain" width="110" height="140" loading="lazy" />
                         <div class="flex-1 min-w-0">
                           <div class="text-fpl-cyan font-medium truncate">{p.web_name}</div>
                           <div class="flex gap-3 text-xs text-gray-400 mt-0.5">
@@ -180,7 +180,7 @@ export default function LiveTracker(props: { currentGwId: number }) {
                         </div>
                         <div class="text-right shrink-0">
                           <div class="text-fpl-green font-bold text-lg tabular-nums">{p.total_points}</div>
-                          <div class="text-[11px] text-gray-500">pts</div>
+                          <div class="text-[11px] text-gray-400">pts</div>
                         </div>
                       </div>
                     </a>
@@ -211,10 +211,10 @@ export default function LiveTracker(props: { currentGwId: number }) {
                     <For each={liveData().players.slice(0, 30)}>
                       {(p, i) => (
                         <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors">
-                          <td class="py-2 px-3 text-gray-500">{i() + 1}</td>
+                          <td class="py-2 px-3 text-gray-400">{i() + 1}</td>
                           <td class="py-2 px-3">
                             <a href={`/players/${p.player_id}`} class="flex items-center gap-2">
-                              <img src={p.shirt_url || ''} alt="" class="w-7 h-7 shrink-0" loading="lazy" />
+                              <img src={p.shirt_url || ''} alt="" class="w-7 h-7 shrink-0 object-contain" width="110" height="140" loading="lazy" />
                               <span class="text-fpl-cyan font-medium hover:underline">{p.web_name}</span>
                             </a>
                           </td>

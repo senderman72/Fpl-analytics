@@ -63,6 +63,10 @@ def create_app() -> FastAPI:
     async def health_check() -> dict[str, str]:
         return {"status": "ok"}
 
+    @app.get("/sentry-debug")
+    async def sentry_debug() -> None:
+        raise RuntimeError("Sentry test — safe to delete this route")
+
     return app
 
 

@@ -143,4 +143,7 @@ const rest = picks.slice(3);
       </table>
     </div>
   )}
+  <script is:inline>
+    if (typeof window.gtag === 'function') gtag('event', 'captain_pick_viewed');
+  </script>
 </Layout>

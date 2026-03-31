@@ -246,4 +246,7 @@ const totalBonus = history.reduce((sum, h) => sum + h.bonus, 0);
       </table>
     </div>
   </div>
+  <script is:inline define:vars={{ playerName: player.web_name }}>
+    if (typeof window.gtag === 'function') gtag('event', 'player_profile_viewed', { player: playerName });
+  </script>
 </Layout>

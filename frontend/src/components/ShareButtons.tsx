@@ -1,4 +1,5 @@
 import { createSignal } from 'solid-js';
+import { trackEvent } from '../lib/analytics';
 
 interface Props {
   url: string;
@@ -11,6 +12,7 @@ export default function ShareButtons(props: Props) {
   const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   function shareOnX() {
+    trackEvent('share_clicked', { method: 'x' });
     const webUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(props.text)}&url=${encodeURIComponent(props.url)}`;
     if (isMobile()) {
       window.open(webUrl, '_blank');
@@ -20,6 +22,7 @@ export default function ShareButtons(props: Props) {
   }
 
   function shareOnMessenger() {
+    trackEvent('share_clicked', { method: 'messenger' });
     if (isMobile()) {
       window.open(`fb-messenger://share?link=${encodeURIComponent(props.url)}`, '_blank');
     } else {
@@ -28,10 +31,12 @@ export default function ShareButtons(props: Props) {
   }
 
   function shareViaSms() {
+    trackEvent('share_clicked', { method: 'sms' });
     window.location.href = `sms:?body=${encodeURIComponent(props.text + ' ' + props.url)}`;
   }
 
   async function copyLink() {
+    trackEvent('share_clicked', { method: 'copy_link' });
     await navigator.clipboard.writeText(props.url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

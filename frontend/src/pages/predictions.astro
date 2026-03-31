@@ -178,4 +178,7 @@ const perGwIds = predictions[0]?.predicted_per_gw?.map(g => g.gw_id) ?? [];
       </table>
     </div>
   </div>
+  <script is:inline>
+    if (typeof window.gtag === 'function') gtag('event', 'prediction_viewed');
+  </script>
 </Layout>

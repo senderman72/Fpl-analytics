@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, Show } from 'solid-js';
+import { createSignal, onCleanup, onMount, Show } from 'solid-js';
 
 interface Props {
   deadline: string;
@@ -28,11 +28,16 @@ export default function DeadlineCountdown(props: Props) {
     return t && t.total < 86400000;
   };
 
-  const localDeadline = () =>
-    new Date(props.deadline).toLocaleString(undefined, {
-      weekday: 'short', day: 'numeric', month: 'short',
-      hour: '2-digit', minute: '2-digit',
-    });
+  const [localDeadline, setLocalDeadline] = createSignal('');
+
+  onMount(() => {
+    setLocalDeadline(
+      new Date(props.deadline).toLocaleString(undefined, {
+        weekday: 'short', day: 'numeric', month: 'short',
+        hour: '2-digit', minute: '2-digit',
+      })
+    );
+  });
 
   return (
     <Show when={time()} fallback={<span class="text-fpl-pink font-bold">DEADLINE PASSED</span>}>

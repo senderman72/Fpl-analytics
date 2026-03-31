@@ -85,7 +85,7 @@ function isActive(href: string) {
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-L6SSDG9F6S"></script>
     <style is:global>
       html { scroll-behavior: smooth; }
-      @supports (padding-top: env(safe-area-inset-top)) {
+      @media (display-mode: standalone) {
         .safe-top { padding-top: env(safe-area-inset-top); }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
       }

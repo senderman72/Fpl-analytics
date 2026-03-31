@@ -7,6 +7,7 @@ from decimal import Decimal
 from sqlalchemy import func, update
 from sqlalchemy.dialects.postgresql import insert
 
+from app.core.cache import sync_invalidate_pattern
 from app.core.database import sync_session_factory
 from app.models.fixture import Fixture
 from app.models.gameweek import Gameweek
@@ -76,6 +77,11 @@ def sync_bootstrap() -> dict[str, int]:
         "gameweeks": len(gameweeks),
     }
     logger.info("sync_bootstrap complete: %s", counts)
+
+    sync_invalidate_pattern("players:*")
+    sync_invalidate_pattern("gameweeks:*")
+    sync_invalidate_pattern("decisions:*")
+
     return counts
 
 
@@ -98,6 +104,11 @@ def sync_fixtures() -> dict[str, int]:
     _detect_dgw_bgw()
 
     logger.info("sync_fixtures complete: %d fixtures", len(fixtures))
+
+    sync_invalidate_pattern("fixtures:*")
+    sync_invalidate_pattern("decisions:*")
+    sync_invalidate_pattern("predictions:*")
+
     return {"fixtures": len(fixtures)}
 
 
@@ -167,6 +178,10 @@ def sync_player_history() -> dict[str, int]:
         total,
         failed,
     )
+
+    sync_invalidate_pattern("players:history:*")
+    sync_invalidate_pattern("players:detail:*")
+
     return {"player_gw_stats": total, "failed": failed}
 
 
@@ -187,6 +202,9 @@ def sync_price_snapshot() -> dict[str, int]:
         session.commit()
 
     logger.info("sync_price_snapshot complete: %d rows", len(rows))
+
+    sync_invalidate_pattern("decisions:prices:*")
+
     return {"player_prices": len(rows)}
 
 
@@ -302,6 +320,11 @@ def sync_understat(season: str = "2025") -> dict[str, int]:
         len(rows),
         len(fpl_to_understat),
     )
+
+    sync_invalidate_pattern("predictions:*")
+    sync_invalidate_pattern("decisions:*")
+    sync_invalidate_pattern("players:detail:*")
+
     return {"player_season_xg": len(rows), "matched": len(fpl_to_understat)}
 
 
@@ -423,4 +446,9 @@ def recompute_form_cache() -> dict[str, int]:
             session.commit()
 
     logger.info("recompute_form_cache complete: %d rows", len(all_rows))
+
+    sync_invalidate_pattern("players:*")
+    sync_invalidate_pattern("predictions:*")
+    sync_invalidate_pattern("decisions:*")
+
     return {"form_rows": len(all_rows)}

@@ -44,11 +44,11 @@ export default function InstallPrompt() {
   onMount(() => {
     window.addEventListener('beforeinstallprompt', onBeforeInstall);
     window.addEventListener('appinstalled', onAppInstalled);
-  });
 
-  onCleanup(() => {
-    window.removeEventListener('beforeinstallprompt', onBeforeInstall);
-    window.removeEventListener('appinstalled', onAppInstalled);
+    onCleanup(() => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstall);
+      window.removeEventListener('appinstalled', onAppInstalled);
+    });
   });
 
   async function handleInstall() {

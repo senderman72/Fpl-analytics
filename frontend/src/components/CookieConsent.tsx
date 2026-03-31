@@ -61,9 +61,9 @@ export default function CookieConsent() {
         <div
           style={{
             position: 'fixed',
-            bottom: '72px',
+            top: '50%',
             left: '50%',
-            transform: 'translateX(-50%)',
+            transform: 'translate(-50%, -50%)',
             'z-index': '45',
             width: 'calc(100% - 2rem)',
             'max-width': '520px',
@@ -153,7 +153,7 @@ export default function CookieConsent() {
           title="Cookie preferences"
           style={{
             position: 'fixed',
-            bottom: '80px',
+            bottom: '100px',
             right: '16px',
             'z-index': '44',
             width: '40px',

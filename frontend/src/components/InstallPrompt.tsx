@@ -74,25 +74,29 @@ export default function InstallPrompt() {
       <div
         style={{
           position: 'fixed',
+          inset: '0',
+          'z-index': '100',
+          background: 'rgba(0, 0, 0, 0.5)',
+          'backdrop-filter': 'blur(4px)',
+          '-webkit-backdrop-filter': 'blur(4px)',
+        }}
+        onClick={dismiss}
+      />
+      <div
+        style={{
+          position: 'fixed',
           bottom: '72px',
           left: '50%',
           transform: 'translateX(-50%)',
-          'z-index': '43',
+          'z-index': '101',
           width: 'calc(100% - 2rem)',
           'max-width': '400px',
-          animation: 'slideUp 0.3s ease-out',
         }}
       >
-        <style>{`
-          @keyframes slideUp {
-            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
-          }
-        `}</style>
         <div
           style={{
-            background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-            border: '1px solid rgba(0, 255, 135, 0.2)',
+            background: '#1a1a2e',
+            border: '1px solid rgba(0, 255, 135, 0.25)',
             'border-radius': '16px',
             padding: '16px',
             'box-shadow': '0 12px 40px rgba(0,0,0,0.5)',

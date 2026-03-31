@@ -105,17 +105,17 @@ const deadlineIso = currentGW?.deadline_time ?? null;
 
                 <!-- Teams row -->
                 <div class="flex items-center justify-between gap-4">
-                  <div class="flex items-center gap-3 flex-1 min-w-0">
+                  <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     <span
-                      class="shrink-0 w-8 h-8 flex items-center justify-center text-sm font-bold rounded-lg"
+                      class="shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm font-bold rounded-lg"
                       style={`background: ${homeColor}18; color: ${homeColor}; border: 1px solid ${homeColor}30`}
                     >
                       {f.home_difficulty}
                     </span>
                     {f.home_badge_url && (
-                      <img src={f.home_badge_url} alt={f.home_short_name ?? ''} class="w-8 h-8 shrink-0" loading="lazy" />
+                      <img src={f.home_badge_url} alt={f.home_short_name ?? ''} class="w-10 h-10 sm:w-8 sm:h-8 shrink-0" loading="lazy" />
                     )}
-                    <span class="font-bold text-white text-base truncate">{f.home_short_name}</span>
+                    <span class="hidden sm:inline font-bold text-white text-base truncate">{f.home_short_name}</span>
                   </div>
 
                   <div class="shrink-0 min-w-[60px] text-center">
@@ -126,13 +126,13 @@ const deadlineIso = currentGW?.deadline_time ?? null;
                     )}
                   </div>
 
-                  <div class="flex items-center gap-3 flex-1 min-w-0 justify-end">
-                    <span class="font-bold text-white text-base truncate text-right">{f.away_short_name}</span>
+                  <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 justify-end">
+                    <span class="hidden sm:inline font-bold text-white text-base truncate text-right">{f.away_short_name}</span>
                     {f.away_badge_url && (
-                      <img src={f.away_badge_url} alt={f.away_short_name ?? ''} class="w-8 h-8 shrink-0" loading="lazy" />
+                      <img src={f.away_badge_url} alt={f.away_short_name ?? ''} class="w-10 h-10 sm:w-8 sm:h-8 shrink-0" loading="lazy" />
                     )}
                     <span
-                      class="shrink-0 w-8 h-8 flex items-center justify-center text-sm font-bold rounded-lg"
+                      class="shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm font-bold rounded-lg"
                       style={`background: ${awayColor}18; color: ${awayColor}; border: 1px solid ${awayColor}30`}
                     >
                       {f.away_difficulty}

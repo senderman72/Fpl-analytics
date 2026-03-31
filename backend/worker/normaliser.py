@@ -151,6 +151,22 @@ def normalise_price_snapshot(player_id: int, raw: dict[str, Any]) -> dict[str, A
     }
 
 
+def normalise_transfer_snapshot(
+    player_id: int,
+    transfers_in: int,
+    transfers_out: int,
+    recorded_at: dt.datetime,
+) -> dict[str, Any]:
+    """Map current transfer counts to a transfer_snapshots row."""
+    return {
+        "player_id": player_id,
+        "recorded_at": recorded_at,
+        "transfers_in_event": transfers_in,
+        "transfers_out_event": transfers_out,
+        "net_transfers": transfers_in - transfers_out,
+    }
+
+
 # --- Understat matching and normalisation ---
 
 # Map Understat team names to FPL short names

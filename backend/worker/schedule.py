@@ -28,6 +28,10 @@ beat_schedule = {
         "task": "worker.tasks.sync_price_snapshot",
         "schedule": crontab(hour=3, minute=5),
     },
+    "sync-transfer-counts": {
+        "task": "worker.tasks.sync_transfer_counts",
+        "schedule": crontab(hour="6,8,10,12,14,16,18,20,22", minute=15),
+    },
     # ── Weekly on Tuesday at 04:00 UTC ──
     "sync-fixtures": {
         "task": "worker.tasks.sync_fixtures",

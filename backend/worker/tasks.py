@@ -1,6 +1,7 @@
 """Celery task definitions for FPL data ingestion."""
 
 import asyncio
+import datetime as dt
 import logging
 from decimal import Decimal
 
@@ -17,6 +18,7 @@ from app.models.player_gw_stats import PlayerGWStats
 from app.models.player_gw_xg import PlayerSeasonXG
 from app.models.player_prices import PlayerPrice
 from app.models.team import Team
+from app.models.transfer_snapshot import TransferSnapshot
 from app.services.fpl_client import (
     fetch_bootstrap,
     fetch_fixtures,
@@ -32,6 +34,7 @@ from worker.normaliser import (
     normalise_player_gw,
     normalise_price_snapshot,
     normalise_team,
+    normalise_transfer_snapshot,
     normalise_understat_season,
 )
 
@@ -83,6 +86,57 @@ def sync_bootstrap() -> dict[str, int]:
     sync_invalidate_pattern("decisions:*")
 
     return counts
+
+
+@celery_app.task(name="worker.tasks.sync_transfer_counts")
+def sync_transfer_counts() -> dict[str, int]:
+    """Lightweight bootstrap sync: update transfer counts + snapshot velocity."""
+    data = asyncio.run(fetch_bootstrap())
+    now = dt.datetime.now(dt.UTC)
+    snapshot_rows: list[dict] = []
+
+    with sync_session_factory() as session:
+        for raw in data["elements"]:
+            tin = raw.get("transfers_in_event", 0)
+            tout = raw.get("transfers_out_event", 0)
+            net = tin - tout
+
+            session.execute(
+                update(Player)
+                .where(Player.id == raw["id"])
+                .values(
+                    transfers_in_event=tin,
+                    transfers_out_event=tout,
+                    selected_by_percent=Decimal(
+                        str(raw.get("selected_by_percent", "0"))
+                    ),
+                    cost_change_event=raw.get("cost_change_event", 0),
+                )
+            )
+
+            if abs(net) >= 5000:
+                snapshot_rows.append(
+                    normalise_transfer_snapshot(raw["id"], tin, tout, now)
+                )
+
+        if snapshot_rows:
+            stmt = insert(TransferSnapshot).values(snapshot_rows)
+            stmt = stmt.on_conflict_do_update(
+                constraint="uq_transfer_snap_player_ts",
+                set_={c.name: c for c in stmt.excluded if c.name != "id"},
+            )
+            session.execute(stmt)
+
+        session.commit()
+
+    sync_invalidate_pattern("decisions:prices*")
+
+    logger.info(
+        "sync_transfer_counts complete: %d players, %d snapshots",
+        len(data["elements"]),
+        len(snapshot_rows),
+    )
+    return {"players_updated": len(data["elements"]), "snapshots": len(snapshot_rows)}
 
 
 @celery_app.task(name="worker.tasks.sync_fixtures")

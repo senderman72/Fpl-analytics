@@ -8,6 +8,7 @@ from app.models.player_gw_stats import PlayerGWStats
 from app.models.player_gw_xg import PlayerSeasonXG
 from app.models.player_prices import PlayerPrice
 from app.models.team import Team
+from app.models.transfer_snapshot import TransferSnapshot
 
 __all__ = [
     "Fixture",
@@ -18,4 +19,5 @@ __all__ = [
     "PlayerPrice",
     "PlayerSeasonXG",
     "Team",
+    "TransferSnapshot",
 ]

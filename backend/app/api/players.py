@@ -1,6 +1,5 @@
 """Player endpoints."""
 
-import asyncio
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -149,26 +148,26 @@ async def get_player(
         raise HTTPException(status_code=404, detail="Player not found")
     player, team_short, team_code = row
 
-    form_result, xg_result, season_result = await asyncio.gather(
-        session.execute(
-            select(PlayerFormCache).where(
-                PlayerFormCache.player_id == player_id,
-                PlayerFormCache.gw_window == 6,
-            )
-        ),
-        session.execute(
-            select(PlayerSeasonXG).where(PlayerSeasonXG.player_id == player_id)
-        ),
-        session.execute(
-            select(
-                func.sum(PlayerGWStats.goals_scored),
-                func.sum(PlayerGWStats.assists),
-                func.sum(PlayerGWStats.total_points),
-            ).where(PlayerGWStats.player_id == player_id)
-        ),
+    form_result = await session.execute(
+        select(PlayerFormCache).where(
+            PlayerFormCache.player_id == player_id,
+            PlayerFormCache.gw_window == 6,
+        )
     )
     form = form_result.scalars().first()
+
+    xg_result = await session.execute(
+        select(PlayerSeasonXG).where(PlayerSeasonXG.player_id == player_id)
+    )
     xg = xg_result.scalars().first()
+
+    season_result = await session.execute(
+        select(
+            func.sum(PlayerGWStats.goals_scored),
+            func.sum(PlayerGWStats.assists),
+            func.sum(PlayerGWStats.total_points),
+        ).where(PlayerGWStats.player_id == player_id)
+    )
     season_row = season_result.first()
     s_goals = season_row[0] or 0 if season_row else 0
     s_assists = season_row[1] or 0 if season_row else 0
@@ -265,23 +264,22 @@ async def get_player_fixtures(
         raise HTTPException(status_code=404, detail="Player not found")
     team_id = row[0]
 
-    fix_result, teams_result = await asyncio.gather(
-        session.execute(
-            select(Fixture, Gameweek.is_double)
-            .outerjoin(Gameweek, Fixture.gameweek_id == Gameweek.id)
-            .where(
-                Fixture.finished == False,  # noqa: E712
-                or_(
-                    Fixture.home_team_id == team_id,
-                    Fixture.away_team_id == team_id,
-                ),
-            )
-            .order_by(Fixture.gameweek_id, Fixture.kickoff_time)
-            .limit(limit)
-        ),
-        session.execute(select(Team.id, Team.short_name)),
+    result = await session.execute(
+        select(Fixture, Gameweek.is_double)
+        .outerjoin(Gameweek, Fixture.gameweek_id == Gameweek.id)
+        .where(
+            Fixture.finished == False,  # noqa: E712
+            or_(
+                Fixture.home_team_id == team_id,
+                Fixture.away_team_id == team_id,
+            ),
+        )
+        .order_by(Fixture.gameweek_id, Fixture.kickoff_time)
+        .limit(limit)
     )
-    rows = fix_result.all()
+    rows = result.all()
+
+    teams_result = await session.execute(select(Team.id, Team.short_name))
     team_names = {tid: sn for tid, sn in teams_result.all()}
 
     fixtures = []

@@ -188,7 +188,7 @@ function isActive(href: string) {
         </a>
 
         <!-- Tools -->
-        <details class="flex-1 relative">
+        <details class="flex-1 relative mobile-dropdown">
           <summary class:list={['flex flex-col items-center justify-center py-2 px-1 min-h-[56px] transition-colors cursor-pointer list-none', toolsActive ? 'text-fpl-green' : 'text-gray-400']}>
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <span class="text-[11px] mt-0.5">Tools</span>
@@ -209,7 +209,7 @@ function isActive(href: string) {
         </details>
 
         <!-- More -->
-        <details class="flex-1 relative">
+        <details class="flex-1 relative mobile-dropdown">
           <summary class="flex flex-col items-center justify-center py-2 px-1 min-h-[56px] transition-colors cursor-pointer list-none text-gray-400">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
             <span class="text-[11px] mt-0.5">More</span>
@@ -218,6 +218,7 @@ function isActive(href: string) {
             <a href="/live" class:list={['block px-4 py-3 text-sm transition-colors', isActive('/live') ? 'text-fpl-green bg-fpl-green/10' : 'text-gray-300 hover:text-white hover:bg-white/5']}>Live</a>
             <a href="/fixtures" class:list={['block px-4 py-3 text-sm transition-colors', isActive('/fixtures') ? 'text-fpl-green bg-fpl-green/10' : 'text-gray-300 hover:text-white hover:bg-white/5']}>Fixtures</a>
             <a href="/predictions" class:list={['block px-4 py-3 text-sm transition-colors', isActive('/predictions') ? 'text-fpl-green bg-fpl-green/10' : 'text-gray-300 hover:text-white hover:bg-white/5']}>Predictions</a>
+            <button id="install-app-btn" class="hidden w-full text-left px-4 py-3 text-sm text-fpl-green hover:bg-fpl-green/10 transition-colors border-t border-gray-700/50">Install App</button>
           </div>
         </details>
       </div>
@@ -228,6 +229,30 @@ function isActive(href: string) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(() => {});
       }
+
+      // Close other mobile dropdowns when one opens
+      document.querySelectorAll('.mobile-dropdown').forEach(function(details) {
+        details.addEventListener('toggle', function() {
+          if (details.open) {
+            document.querySelectorAll('.mobile-dropdown').forEach(function(other) {
+              if (other !== details && other.open) other.open = false;
+            });
+          }
+        });
+      });
+
+      // Show "Install App" button in More menu (non-standalone only)
+      (function() {
+        if (window.matchMedia('(display-mode: standalone)').matches) return;
+        var btn = document.getElementById('install-app-btn');
+        if (!btn) return;
+        btn.classList.remove('hidden');
+        btn.addEventListener('click', function() {
+          sessionStorage.removeItem('install_shown');
+          localStorage.removeItem('install_dismissed');
+          window.location.reload();
+        });
+      })();
     </script>
   </body>
 </html>

@@ -9,22 +9,19 @@ export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = createSignal<BeforeInstallPromptEvent | null>(null);
 
   onMount(() => {
-    // Already installed (standalone mode) or previously dismissed
     if (window.matchMedia('(display-mode: standalone)').matches) return;
     if (localStorage.getItem('install_dismissed')) return;
+    if (sessionStorage.getItem('install_shown')) return;
 
-    // Detect platform
     const ua = navigator.userAgent;
     if (/iPhone|iPad|iPod/.test(ua)) {
       setPlatform('ios');
-      setVisible(true);
     } else if (/Android/.test(ua)) {
       setPlatform('android');
-      // Wait for beforeinstallprompt (Chrome/Edge on Android)
-    } else {
-      // Desktop — don't show
-      return;
     }
+
+    setVisible(true);
+    sessionStorage.setItem('install_shown', '1');
   });
 
   // Listen for Chrome/Edge install prompt
@@ -32,7 +29,10 @@ export default function InstallPrompt() {
     e.preventDefault();
     setDeferredPrompt(e as BeforeInstallPromptEvent);
     setPlatform('android');
-    setVisible(true);
+    if (!localStorage.getItem('install_dismissed') && !sessionStorage.getItem('install_shown')) {
+      setVisible(true);
+      sessionStorage.setItem('install_shown', '1');
+    }
   }
 
   function onAppInstalled() {

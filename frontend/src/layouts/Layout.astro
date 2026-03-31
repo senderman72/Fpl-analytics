@@ -1,6 +1,7 @@
 ---
 import { buildCanonical } from '../lib/seo';
 import CookieConsent from '../components/CookieConsent';
+import InstallPrompt from '../components/InstallPrompt';
 
 interface Props {
   title: string;
@@ -43,7 +44,7 @@ function isActive(href: string) {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
@@ -51,6 +52,7 @@ function isActive(href: string) {
     <meta name="theme-color" content="#37003c" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <!-- Open Graph -->
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
@@ -83,11 +85,15 @@ function isActive(href: string) {
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-L6SSDG9F6S"></script>
     <style is:global>
       html { scroll-behavior: smooth; }
+      @supports (padding-top: env(safe-area-inset-top)) {
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+      }
     </style>
   </head>
   <body class="bg-fpl-dark text-gray-200 font-sans min-h-screen flex flex-col text-sm md:text-base">
     <!-- Top Nav -->
-    <nav class="sticky top-0 z-50 bg-fpl-purple/95 backdrop-blur-md border-b border-fpl-green/10">
+    <nav class="sticky top-0 z-50 bg-fpl-purple/95 backdrop-blur-md border-b border-fpl-green/10 safe-top">
       <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
         <a href="/" class="flex items-center gap-2 shrink-0">
           <span class="text-fpl-green font-extrabold text-lg tracking-tight">FPL</span>
@@ -160,7 +166,7 @@ function isActive(href: string) {
     </footer>
 
     <!-- Mobile Bottom Tab Bar -->
-    <nav class="md:hidden fixed bottom-0 inset-x-0 z-50 bg-fpl-card/95 backdrop-blur-md border-t border-gray-700/50">
+    <nav class="md:hidden fixed bottom-0 inset-x-0 z-50 bg-fpl-card/95 backdrop-blur-md border-t border-gray-700/50 safe-bottom">
       <div class="flex items-stretch justify-around">
         <!-- Home -->
         <a href="/" class:list={['flex flex-col items-center justify-center py-2 px-1 flex-1 min-h-[56px] transition-colors', isActive('/') && currentPath === '/' ? 'text-fpl-green' : 'text-gray-400']}>
@@ -215,6 +221,7 @@ function isActive(href: string) {
         </details>
       </div>
     </nav>
+    <InstallPrompt client:idle />
     <CookieConsent client:idle />
     <script>
       if ('serviceWorker' in navigator) {

@@ -3,7 +3,12 @@
   "short_name": "FPL",
   "description": "Data-driven Fantasy Premier League tools: captain picks, transfer advice, points predictions, and fixture analysis.",
   "start_url": "/",
+  "id": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone"],
+  "orientation": "portrait",
+  "categories": ["sports"],
   "background_color": "#1a1a2e",
   "theme_color": "#37003c",
   "icons": [

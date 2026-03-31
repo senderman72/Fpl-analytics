@@ -9,5 +9,5 @@ const players = await getPlayers({ sort_by: 'form_points', limit: 100 });
 <Layout title="Players" description="Browse 800+ FPL players — filter by position, sort by form, xGI, price, and minutes. Find your next transfer target.">
   <h1 class="page-title mb-1">Player Stats</h1>
   <p class="text-gray-400 text-sm mb-5">Compare stats across all {players.length}+ Premier League players</p>
-  <PlayerTable client:load initial={players} />
+  <PlayerTable client:idle initial={players} />
 </Layout>

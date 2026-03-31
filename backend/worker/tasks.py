@@ -85,6 +85,8 @@ def sync_bootstrap() -> dict[str, int]:
     sync_invalidate_pattern("gameweeks:*")
     sync_invalidate_pattern("decisions:*")
 
+    warm_caches.delay()
+
     return counts
 
 
@@ -505,4 +507,48 @@ def recompute_form_cache() -> dict[str, int]:
     sync_invalidate_pattern("predictions:*")
     sync_invalidate_pattern("decisions:*")
 
+    warm_caches.delay()
+
     return {"form_rows": len(all_rows)}
+
+
+@celery_app.task(name="worker.tasks.warm_caches")
+def warm_caches() -> dict[str, int]:
+    """Hit key API endpoints to pre-populate Redis cache after data sync.
+
+    Called as the final step after data sync tasks complete.
+    Uses INTERNAL_API_URL (defaults to http://localhost:8000).
+    """
+    import httpx
+
+    from app.core.config import get_settings
+
+    base = get_settings().internal_api_url.rstrip("/")
+
+    endpoints = [
+        "/gameweeks",
+        "/fixtures",
+        "/players?sort_by=form_points&limit=50",
+        "/players/ids",
+        "/decisions/buys?limit=30",
+        "/decisions/captains?limit=10",
+        "/decisions/chips",
+        "/decisions/differentials?limit=20",
+        "/decisions/price-changes",
+        "/predictions/upcoming?horizon=5&limit=50",
+    ]
+
+    warmed = 0
+    with httpx.Client(timeout=30.0) as client:
+        for path in endpoints:
+            try:
+                resp = client.get(f"{base}{path}")
+                if resp.status_code == 200:
+                    warmed += 1
+                else:
+                    logger.warning("Cache warm failed %s: %d", path, resp.status_code)
+            except Exception:
+                logger.warning("Cache warm error for %s", path, exc_info=True)
+
+    logger.info("warm_caches complete: %d/%d endpoints", warmed, len(endpoints))
+    return {"warmed": warmed, "total": len(endpoints)}

@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     # FPL API
     fpl_api_base_url: str = "https://fantasy.premierleague.com/api"
 
+    # Internal API URL (for cache warming from Celery worker)
+    internal_api_url: str = "http://localhost:8000"
+
     # Sentry
     sentry_dsn: str = ""
 

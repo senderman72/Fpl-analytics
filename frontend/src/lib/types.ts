@@ -201,11 +201,18 @@ export interface PriceChangeCandidate {
   net_transfers: number;
   cost_change_event: number;
   likelihood: string;
+  target: number;
+  progress: string;
+  velocity: number;
+  already_changed: boolean;
+  predicted_price: number | null;
 }
 
 export interface PriceChangePrediction {
   risers: PriceChangeCandidate[];
   fallers: PriceChangeCandidate[];
+  already_changed: PriceChangeCandidate[];
+  last_updated: string | null;
 }
 
 export interface MyTeamPick {

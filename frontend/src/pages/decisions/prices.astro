@@ -1,19 +1,13 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Breadcrumb from '../../components/Breadcrumb.astro';
-import PositionBadge from '../../components/PositionBadge.astro';
+import LocalTime from '../../components/LocalTime';
 import { getPriceChanges } from '../../api/decisions';
 import { formatCost } from '../../lib/types';
 import type { PriceChangeCandidate } from '../../lib/types';
 
 const data = await getPriceChanges();
-const { risers, fallers } = data;
-
-function likelihoodBadge(l: string) {
-  if (l === 'very_likely') return { text: 'Very Likely', color: 'text-fpl-green bg-fpl-green/10 border-fpl-green/30' };
-  if (l === 'likely') return { text: 'Likely', color: 'text-fpl-cyan bg-fpl-cyan/10 border-fpl-cyan/30' };
-  return { text: 'Possible', color: 'text-gray-400 bg-gray-400/10 border-gray-400/30' };
-}
+const { risers, fallers, already_changed, last_updated } = data;
 
 function formatNet(n: number) {
   const abs = Math.abs(n);
@@ -21,22 +15,89 @@ function formatNet(n: number) {
   if (abs >= 1_000) return `${(abs / 1_000).toFixed(0)}k`;
   return String(abs);
 }
+
+function formatVelocity(v: number): string {
+  if (v === 0) return '';
+  const abs = Math.abs(v);
+  const sign = v > 0 ? '+' : '-';
+  if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(1)}k/hr`;
+  return `${sign}${abs}/hr`;
+}
+
+function progressBarColor(isRiser: boolean, progress: number): string {
+  if (progress >= 90) return isRiser ? '#00ff87' : '#ff2882';
+  if (progress >= 60) return isRiser ? 'rgba(0,255,135,0.7)' : 'rgba(255,40,130,0.7)';
+  return isRiser ? 'rgba(0,255,135,0.4)' : 'rgba(255,40,130,0.4)';
+}
 ---
 
 <Layout title="Price Changes" description="FPL price change predictions — players most likely to rise or fall tonight based on transfer activity.">
   <Breadcrumb items={[{ label: 'Tools' }, { label: 'Prices' }]} />
   <h1 class="page-title mb-1">Price Change Predictions</h1>
-  <p class="text-gray-400 text-sm mb-6">Players likely to rise or fall in price overnight, based on transfer activity this gameweek.</p>
+  <div class="flex flex-wrap items-center gap-3 mb-6">
+    <p class="text-gray-400 text-sm">Players likely to rise or fall in price overnight.</p>
+    {last_updated && (
+      <span class="text-gray-500 text-xs">Updated <LocalTime client:load date={last_updated} hour="2-digit" minute="2-digit" /></span>
+    )}
+  </div>
 
   <!-- Explainer -->
   <div class="card p-5 mb-8 border-l-3 border-fpl-cyan text-sm">
     <h2 class="text-white font-bold mb-2">How price changes work</h2>
     <p class="text-gray-300 leading-relaxed">
       Player prices change by <strong class="text-white">+/-£0.1m overnight</strong> when enough managers transfer them in or out.
-      The FPL algorithm requires roughly <strong class="text-white">200-240k cumulative net transfers</strong> to trigger a change, with at least 30-60k happening on the day.
-      A player can only change once per day and up to 3 times per gameweek. Prices change around <strong class="text-white">1:30am UK time</strong>.
+      The threshold scales with ownership — popular players need more transfers to change.
+      Prices change around <strong class="text-white">1:30am UK time</strong>. Max 1 change per day, 3 per gameweek.
     </p>
   </div>
+
+  <!-- Already Changed Today -->
+  {already_changed.length > 0 && (
+    <div class="mb-8">
+      <h2 class="flex items-center gap-2 text-white font-bold mb-3">
+        <svg class="w-5 h-5 text-fpl-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Already Changed Today
+        <span class="text-xs text-gray-400 font-normal">({already_changed.length})</span>
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {already_changed.slice(0, 10).map((p) => (
+          <a href={`/players/${p.player_id}`} class="card px-4 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
+            <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0 object-contain" width="110" height="140" loading="lazy" />
+            <div class="flex-1 min-w-0">
+              <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-400 text-xs">{p.team_short_name}</span></div>
+              <div class="text-xs text-gray-400">{formatCost(p.now_cost)}</div>
+            </div>
+            <span class:list={['font-bold text-sm', p.cost_change_event > 0 ? 'text-fpl-green' : 'text-fpl-pink']}>
+              {p.cost_change_event > 0 ? '+' : ''}{(p.cost_change_event / 10).toFixed(1)}m
+            </span>
+          </a>
+        ))}
+      </div>
+      {already_changed.length > 10 && (
+        <details class="mt-3">
+          <summary class="text-center text-sm font-medium text-fpl-gold cursor-pointer hover:underline list-none">
+            See all price changes ({already_changed.length - 10} more)
+          </summary>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+            {already_changed.slice(10).map((p) => (
+              <a href={`/players/${p.player_id}`} class="card px-4 py-3 flex items-center gap-3 hover:bg-white/3 transition-colors">
+                <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0 object-contain" width="110" height="140" loading="lazy" />
+                <div class="flex-1 min-w-0">
+                  <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-400 text-xs">{p.team_short_name}</span></div>
+                  <div class="text-xs text-gray-400">{formatCost(p.now_cost)}</div>
+                </div>
+                <span class:list={['font-bold text-sm', p.cost_change_event > 0 ? 'text-fpl-green' : 'text-fpl-pink']}>
+                  {p.cost_change_event > 0 ? '+' : ''}{(p.cost_change_event / 10).toFixed(1)}m
+                </span>
+              </a>
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
+  )}
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Risers -->
@@ -52,23 +113,69 @@ function formatNet(n: number) {
         <div class="card p-6 text-center text-gray-400 text-sm">No players predicted to rise tonight</div>
       ) : (
         <div class="card overflow-hidden">
-          {risers.map((p, i) => {
-            const badge = likelihoodBadge(p.likelihood);
+          {risers.slice(0, 10).map((p) => {
+            const progress = Number(p.progress);
+            const barColor = progressBarColor(true, progress);
             return (
-              <a href={`/players/${p.player_id}`} class="flex items-center gap-3 px-4 py-3 border-b border-gray-800/40 hover:bg-white/3 transition-colors last:border-0">
-                <span class="text-gray-400 text-xs w-5 text-right shrink-0">{i + 1}</span>
-                <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0 object-contain" width="110" height="140" loading="lazy" />
-                <div class="flex-1 min-w-0">
-                  <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-400 text-xs">{p.team_short_name}</span></div>
-                  <div class="text-xs text-gray-400">{formatCost(p.now_cost)} · {p.selected_by_percent}% owned</div>
+              <a href={`/players/${p.player_id}`} class="block px-4 py-3 border-b border-gray-800/40 hover:bg-white/3 transition-colors last:border-0">
+                <div class="flex items-center gap-3">
+                  <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0 object-contain" width="110" height="140" loading="lazy" />
+                  <div class="flex-1 min-w-0">
+                    <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-400 text-xs">{p.team_short_name}</span></div>
+                    <div class="text-xs text-gray-400">
+                      {formatCost(p.now_cost)} → <span class="text-fpl-green">{formatCost(p.predicted_price ?? p.now_cost)}</span>
+                      {' · '}{p.selected_by_percent}%
+                    </div>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <div class="text-fpl-green font-bold text-sm">+{formatNet(p.net_transfers)}</div>
+                    <div class="text-fpl-green text-xs font-semibold">{progress.toFixed(0)}%</div>
+                  </div>
                 </div>
-                <div class="text-right shrink-0">
-                  <div class="text-fpl-green font-bold text-sm">+{formatNet(p.net_transfers)}</div>
-                  <span class={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${badge.color}`}>{badge.text}</span>
+                <div class="mt-2 h-1.5 rounded-full bg-white/5">
+                  <div class="h-full rounded-full transition-all" style={`width: ${progress}%; background: ${barColor}`}></div>
                 </div>
+                {p.velocity !== 0 && (
+                  <div class="text-[11px] text-gray-500 mt-1">{formatVelocity(p.velocity)}</div>
+                )}
               </a>
             );
           })}
+          {risers.length > 10 && (
+            <details>
+              <summary class="px-4 py-3 text-center text-sm font-medium text-fpl-green cursor-pointer hover:bg-white/3 transition-colors list-none">
+                See all price changes ({risers.length - 10} more)
+              </summary>
+              {risers.slice(10).map((p) => {
+                const progress = Number(p.progress);
+                const barColor = progressBarColor(true, progress);
+                return (
+                  <a href={`/players/${p.player_id}`} class="block px-4 py-3 border-b border-gray-800/40 hover:bg-white/3 transition-colors last:border-0">
+                    <div class="flex items-center gap-3">
+                      <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0 object-contain" width="110" height="140" loading="lazy" />
+                      <div class="flex-1 min-w-0">
+                        <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-400 text-xs">{p.team_short_name}</span></div>
+                        <div class="text-xs text-gray-400">
+                          {formatCost(p.now_cost)} → <span class="text-fpl-green">{formatCost(p.predicted_price ?? p.now_cost)}</span>
+                          {' · '}{p.selected_by_percent}%
+                        </div>
+                      </div>
+                      <div class="text-right shrink-0">
+                        <div class="text-fpl-green font-bold text-sm">+{formatNet(p.net_transfers)}</div>
+                        <div class="text-fpl-green text-xs font-semibold">{progress.toFixed(0)}%</div>
+                      </div>
+                    </div>
+                    <div class="mt-2 h-1.5 rounded-full bg-white/5">
+                      <div class="h-full rounded-full transition-all" style={`width: ${progress}%; background: ${barColor}`}></div>
+                    </div>
+                    {p.velocity !== 0 && (
+                      <div class="text-[11px] text-gray-500 mt-1">{formatVelocity(p.velocity)}</div>
+                    )}
+                  </a>
+                );
+              })}
+            </details>
+          )}
         </div>
       )}
     </div>
@@ -86,23 +193,69 @@ function formatNet(n: number) {
         <div class="card p-6 text-center text-gray-400 text-sm">No players predicted to fall tonight</div>
       ) : (
         <div class="card overflow-hidden">
-          {fallers.map((p, i) => {
-            const badge = likelihoodBadge(p.likelihood);
+          {fallers.slice(0, 10).map((p) => {
+            const progress = Number(p.progress);
+            const barColor = progressBarColor(false, progress);
             return (
-              <a href={`/players/${p.player_id}`} class="flex items-center gap-3 px-4 py-3 border-b border-gray-800/40 hover:bg-white/3 transition-colors last:border-0">
-                <span class="text-gray-400 text-xs w-5 text-right shrink-0">{i + 1}</span>
-                <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0 object-contain" width="110" height="140" loading="lazy" />
-                <div class="flex-1 min-w-0">
-                  <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-400 text-xs">{p.team_short_name}</span></div>
-                  <div class="text-xs text-gray-400">{formatCost(p.now_cost)} · {p.selected_by_percent}% owned</div>
+              <a href={`/players/${p.player_id}`} class="block px-4 py-3 border-b border-gray-800/40 hover:bg-white/3 transition-colors last:border-0">
+                <div class="flex items-center gap-3">
+                  <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0 object-contain" width="110" height="140" loading="lazy" />
+                  <div class="flex-1 min-w-0">
+                    <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-400 text-xs">{p.team_short_name}</span></div>
+                    <div class="text-xs text-gray-400">
+                      {formatCost(p.now_cost)} → <span class="text-fpl-pink">{formatCost(p.predicted_price ?? p.now_cost)}</span>
+                      {' · '}{p.selected_by_percent}%
+                    </div>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <div class="text-fpl-pink font-bold text-sm">-{formatNet(p.net_transfers)}</div>
+                    <div class="text-fpl-pink text-xs font-semibold">{progress.toFixed(0)}%</div>
+                  </div>
                 </div>
-                <div class="text-right shrink-0">
-                  <div class="text-fpl-pink font-bold text-sm">{formatNet(p.net_transfers)}</div>
-                  <span class={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${badge.color}`}>{badge.text}</span>
+                <div class="mt-2 h-1.5 rounded-full bg-white/5">
+                  <div class="h-full rounded-full transition-all" style={`width: ${progress}%; background: ${barColor}`}></div>
                 </div>
+                {p.velocity !== 0 && (
+                  <div class="text-[11px] text-gray-500 mt-1">{formatVelocity(p.velocity)}</div>
+                )}
               </a>
             );
           })}
+          {fallers.length > 10 && (
+            <details>
+              <summary class="px-4 py-3 text-center text-sm font-medium text-fpl-pink cursor-pointer hover:bg-white/3 transition-colors list-none">
+                See all price changes ({fallers.length - 10} more)
+              </summary>
+              {fallers.slice(10).map((p) => {
+                const progress = Number(p.progress);
+                const barColor = progressBarColor(false, progress);
+                return (
+                  <a href={`/players/${p.player_id}`} class="block px-4 py-3 border-b border-gray-800/40 hover:bg-white/3 transition-colors last:border-0">
+                    <div class="flex items-center gap-3">
+                      <img src={p.shirt_url || ''} alt="" class="w-8 h-8 shrink-0 object-contain" width="110" height="140" loading="lazy" />
+                      <div class="flex-1 min-w-0">
+                        <div class="text-white font-medium truncate">{p.web_name} <span class="text-gray-400 text-xs">{p.team_short_name}</span></div>
+                        <div class="text-xs text-gray-400">
+                          {formatCost(p.now_cost)} → <span class="text-fpl-pink">{formatCost(p.predicted_price ?? p.now_cost)}</span>
+                          {' · '}{p.selected_by_percent}%
+                        </div>
+                      </div>
+                      <div class="text-right shrink-0">
+                        <div class="text-fpl-pink font-bold text-sm">-{formatNet(p.net_transfers)}</div>
+                        <div class="text-fpl-pink text-xs font-semibold">{progress.toFixed(0)}%</div>
+                      </div>
+                    </div>
+                    <div class="mt-2 h-1.5 rounded-full bg-white/5">
+                      <div class="h-full rounded-full transition-all" style={`width: ${progress}%; background: ${barColor}`}></div>
+                    </div>
+                    {p.velocity !== 0 && (
+                      <div class="text-[11px] text-gray-500 mt-1">{formatVelocity(p.velocity)}</div>
+                    )}
+                  </a>
+                );
+              })}
+            </details>
+          )}
         </div>
       )}
     </div>

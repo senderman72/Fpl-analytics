@@ -332,33 +332,74 @@ async def get_differentials(
 
 
 @router.get("/price-changes", response_model=APIResponse[PriceChangePrediction])
-@cached("decisions:prices", ttl_seconds=1800)
+@cached("decisions:prices", ttl_seconds=600)
 async def get_price_changes(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[PriceChangePrediction]:
     """Predict which players are likely to rise or fall in price tonight."""
+    from datetime import UTC, datetime
+
+    from app.models.transfer_snapshot import TransferSnapshot
+    from app.services.price_change import (
+        MIN_NET_FOR_DISPLAY,
+        compute_progress,
+        compute_target,
+        compute_velocity,
+    )
+
+    # Fetch players
     stmt = select(Player, Team.short_name, Team.code.label("team_code")).join(
         Team, Player.team_id == Team.id
     )
     result = await session.execute(stmt)
     rows = result.all()
 
+    # Fetch today's transfer snapshots for velocity
+    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    snap_result = await session.execute(
+        select(TransferSnapshot)
+        .where(TransferSnapshot.recorded_at >= today_start)
+        .order_by(TransferSnapshot.player_id, TransferSnapshot.recorded_at)
+    )
+    snapshots = snap_result.scalars().all()
+
+    # Build velocity lookup: player_id -> [(net, hours)]
+    snap_by_player: dict[int, list[tuple[int, float]]] = {}
+    for snap in snapshots:
+        hours = snap.recorded_at.hour + snap.recorded_at.minute / 60.0
+        snap_by_player.setdefault(snap.player_id, []).append(
+            (snap.net_transfers, hours)
+        )
+
     risers: list[PriceChangeCandidate] = []
     fallers: list[PriceChangeCandidate] = []
+    changed: list[PriceChangeCandidate] = []
+    last_updated: str | None = None
 
     for player, team_short, team_code in rows:
         net = player.transfers_in_event - player.transfers_out_event
         abs_net = abs(net)
+        is_changed = player.cost_change_event != 0
 
-        if abs_net < 30_000:
+        if abs_net < MIN_NET_FOR_DISPLAY and not is_changed:
             continue
 
-        if abs_net >= 80_000:
+        target = compute_target(player.selected_by_percent)
+        progress = compute_progress(net, target)
+        velocity = compute_velocity(snap_by_player.get(player.id, []))
+
+        if progress >= 90:
             likelihood = "very_likely"
-        elif abs_net >= 50_000:
+        elif progress >= 60:
             likelihood = "likely"
         else:
             likelihood = "possible"
+
+        predicted_price = (
+            None
+            if is_changed
+            else player.now_cost + (1 if net > 0 else -1)
+        )
 
         candidate = PriceChangeCandidate(
             player_id=player.id,
@@ -373,17 +414,42 @@ async def get_price_changes(
             net_transfers=net,
             cost_change_event=player.cost_change_event,
             likelihood=likelihood,
+            target=target,
+            progress=Decimal(str(progress)),
+            velocity=velocity,
+            already_changed=is_changed,
+            predicted_price=predicted_price,
         )
 
-        if net > 0:
+        if is_changed:
+            changed.append(candidate)
+        elif net > 0:
             risers.append(candidate)
         else:
             fallers.append(candidate)
 
-    risers.sort(key=lambda c: c.net_transfers, reverse=True)
-    fallers.sort(key=lambda c: c.net_transfers)
+        if last_updated is None or (
+            player.updated_at and player.updated_at.isoformat() > (last_updated or "")
+        ):
+            last_updated = (
+                player.updated_at.isoformat() + "Z"
+                if player.updated_at and not player.updated_at.tzinfo
+                else player.updated_at.isoformat()
+                if player.updated_at
+                else None
+            )
 
-    return APIResponse(data=PriceChangePrediction(risers=risers, fallers=fallers))
+    risers.sort(key=lambda c: float(c.progress), reverse=True)
+    fallers.sort(key=lambda c: float(c.progress), reverse=True)
+
+    return APIResponse(
+        data=PriceChangePrediction(
+            risers=risers,
+            fallers=fallers,
+            already_changed=changed,
+            last_updated=last_updated,
+        )
+    )
 
 
 def _buy_recommendation(

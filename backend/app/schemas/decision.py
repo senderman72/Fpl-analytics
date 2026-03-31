@@ -82,11 +82,18 @@ class PriceChangeCandidate(BaseModel):
     net_transfers: int
     cost_change_event: int
     likelihood: str  # "very_likely", "likely", "possible"
+    target: int = 0
+    progress: Decimal = Decimal("0")
+    velocity: int = 0
+    already_changed: bool = False
+    predicted_price: int | None = None
 
 
 class PriceChangePrediction(BaseModel):
     risers: list[PriceChangeCandidate]
     fallers: list[PriceChangeCandidate]
+    already_changed: list[PriceChangeCandidate] = []
+    last_updated: str | None = None
 
 
 class GWPrediction(BaseModel):

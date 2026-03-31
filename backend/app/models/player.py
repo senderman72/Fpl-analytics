@@ -3,7 +3,16 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, SmallInteger, String, Text
+from sqlalchemy import (
+    Boolean,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    SmallInteger,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -11,6 +20,10 @@ from app.core.database import Base
 
 class Player(Base):
     __tablename__ = "players"
+    __table_args__ = (
+        Index("idx_players_status", "status"),
+        Index("idx_players_team_position", "team_id", "position"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
     code: Mapped[int] = mapped_column(Integer, server_default="0")

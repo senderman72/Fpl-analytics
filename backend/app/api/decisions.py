@@ -296,15 +296,15 @@ async def get_differentials(
             PlayerFormCache.total_points > 10,
         )
     )
-    result = await session.execute(stmt)
-    rows = result.all()
-
-    # Latest ownership
-    prices_result = await session.execute(
-        select(PlayerPrice.player_id, PlayerPrice.selected_by_percent)
-        .distinct(PlayerPrice.player_id)
-        .order_by(PlayerPrice.player_id, PlayerPrice.recorded_at.desc())
+    result, prices_result = await asyncio.gather(
+        session.execute(stmt),
+        session.execute(
+            select(PlayerPrice.player_id, PlayerPrice.selected_by_percent)
+            .distinct(PlayerPrice.player_id)
+            .order_by(PlayerPrice.player_id, PlayerPrice.recorded_at.desc())
+        ),
     )
+    rows = result.all()
     ownership = {pid: pct for pid, pct in prices_result.all()}
 
     picks = []

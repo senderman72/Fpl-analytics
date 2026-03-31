@@ -10,7 +10,12 @@ from app.core.database import Base
 
 class Fixture(Base):
     __tablename__ = "fixtures"
-    __table_args__ = (Index("idx_fixtures_gw", "gameweek_id"),)
+    __table_args__ = (
+        Index("idx_fixtures_gw", "gameweek_id"),
+        Index("idx_fixtures_home_team", "home_team_id"),
+        Index("idx_fixtures_away_team", "away_team_id"),
+        Index("idx_fixtures_finished_gw", "finished", "gameweek_id"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
     gameweek_id: Mapped[int | None] = mapped_column(ForeignKey("gameweeks.id"))

@@ -1,5 +1,6 @@
 """Gameweek and fixture endpoints."""
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, Query
@@ -74,10 +75,11 @@ async def list_fixtures(
     if finished is not None:
         stmt = stmt.where(Fixture.finished == finished)
 
-    result = await session.execute(stmt)
+    result, teams_result = await asyncio.gather(
+        session.execute(stmt),
+        session.execute(select(Team.id, Team.short_name, Team.code)),
+    )
     fixtures = result.scalars().all()
-
-    teams_result = await session.execute(select(Team.id, Team.short_name, Team.code))
     team_info = {tid: (sn, code) for tid, sn, code in teams_result.all()}
 
     pl_cdn = PL_CDN
@@ -120,18 +122,15 @@ async def get_live_gw(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[LiveGWResponse]:
     """Fetch live scores for an active gameweek from the FPL API."""
-    teams_result = await session.execute(select(Team.id, Team.short_name, Team.code))
+    teams_result, players_result, fix_result = await asyncio.gather(
+        session.execute(select(Team.id, Team.short_name, Team.code)),
+        session.execute(
+            select(Player.id, Player.web_name, Player.team_id, Player.position)
+        ),
+        session.execute(select(Fixture).where(Fixture.gameweek_id == gw_id)),
+    )
     team_map = {tid: (sn, code) for tid, sn, code in teams_result.all()}
-
-    players_result = await session.execute(
-        select(Player.id, Player.web_name, Player.team_id, Player.position)
-    )
     player_map = {pid: (wn, tid, pos) for pid, wn, tid, pos in players_result.all()}
-
-    # Fixtures from DB
-    fix_result = await session.execute(
-        select(Fixture).where(Fixture.gameweek_id == gw_id)
-    )
     db_fixtures = fix_result.scalars().all()
 
     pl_cdn = PL_CDN

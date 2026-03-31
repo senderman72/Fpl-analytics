@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: fpl
+          POSTGRES_PASSWORD: fpl_secret
+          POSTGRES_DB: fpl_analytics
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U fpl"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://fpl:fpl_secret@localhost:5432/fpl_analytics
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/1
+      APP_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run database migrations
+        working-directory: backend
+        run: uv run alembic upgrade head
+
+      - name: Backend — ruff lint
+        working-directory: backend
+        run: uv run ruff check .
+
+      - name: Backend — mypy type check
+        working-directory: backend
+        run: uv run mypy app/ worker/
+
+      - name: Backend — pytest
+        working-directory: backend
+        run: uv run pytest
+
+      - name: Frontend — build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Notify Vercel
+        if: always()
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: "Vercel - fpl-analytics: CI"

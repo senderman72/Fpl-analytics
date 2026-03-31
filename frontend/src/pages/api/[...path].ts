@@ -6,6 +6,17 @@ import type { APIRoute } from 'astro';
 
 const API_URL = import.meta.env.API_URL || 'http://localhost:8000';
 
+function getCacheControl(path: string): string {
+  if (path.startsWith('live/')) {
+    return 'public, s-maxage=30, stale-while-revalidate=30';
+  }
+  if (path.startsWith('my-team/')) {
+    return 'private, s-maxage=300';
+  }
+  // Static data: players, fixtures, gameweeks, decisions, predictions
+  return 'public, s-maxage=3600, stale-while-revalidate=86400';
+}
+
 export const GET: APIRoute = async ({ params, url }) => {
   const path = params.path || '';
   const search = url.search;
@@ -18,7 +29,7 @@ export const GET: APIRoute = async ({ params, url }) => {
     status: res.status,
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'public, s-maxage=60',
+      'Cache-Control': getCacheControl(path),
     },
   });
 };

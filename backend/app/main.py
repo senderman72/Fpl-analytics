@@ -18,7 +18,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
         sentry_sdk.init(dsn=settings.sentry_dsn, traces_sample_rate=0.1)
 
+    from app.core.cache import close_redis, init_redis
+
+    await init_redis()
+
     yield
+
+    await close_redis()
 
     from app.core.database import engine
 
@@ -35,6 +41,10 @@ def create_app() -> FastAPI:
         debug=settings.debug,
         lifespan=lifespan,
     )
+
+    from starlette.middleware.gzip import GZipMiddleware
+
+    app.add_middleware(GZipMiddleware, minimum_size=500)
 
     # --- Routers ---
     from app.api.decisions import router as decisions_router

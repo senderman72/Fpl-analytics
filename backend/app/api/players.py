@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import cached
 from app.core.database import get_session
 from app.models.fixture import Fixture
 from app.models.gameweek import Gameweek
@@ -28,6 +29,7 @@ router = APIRouter(prefix="/players", tags=["players"])
 
 
 @router.get("", response_model=APIResponse[list[PlayerSummary]])
+@cached("players:list", ttl_seconds=3600)
 async def list_players(
     position: int | None = Query(None, ge=1, le=4),
     team_id: int | None = Query(None),
@@ -112,6 +114,7 @@ async def list_players(
 
 
 @router.get("/ids", response_model=APIResponse[list[PlayerIdName]])
+@cached("players:ids", ttl_seconds=86400)
 async def list_player_ids(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[list[PlayerIdName]]:
@@ -130,6 +133,7 @@ async def list_player_ids(
 
 
 @router.get("/{player_id}", response_model=APIResponse[PlayerDetail])
+@cached("players:detail", ttl_seconds=3600)
 async def get_player(
     player_id: int,
     session: AsyncSession = Depends(get_session),
@@ -210,6 +214,7 @@ async def get_player(
 
 
 @router.get("/{player_id}/history", response_model=APIResponse[list[PlayerGWHistory]])
+@cached("players:history", ttl_seconds=3600)
 async def get_player_history(
     player_id: int,
     session: AsyncSession = Depends(get_session),
@@ -247,6 +252,7 @@ async def get_player_history(
 
 
 @router.get("/{player_id}/fixtures", response_model=APIResponse[list[PlayerFixture]])
+@cached("players:fixtures", ttl_seconds=3600)
 async def get_player_fixtures(
     player_id: int,
     limit: int = Query(8, ge=1, le=20),

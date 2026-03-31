@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import cached
 from app.core.database import get_session
 from app.models.fixture import Fixture
 from app.models.gameweek import Gameweek
@@ -81,6 +82,7 @@ async def _get_fdr_upcoming(
 
 
 @router.get("/buys", response_model=APIResponse[list[BuyCandidate]])
+@cached("decisions:buys", ttl_seconds=3600)
 async def get_buy_candidates(
     position: int | None = Query(None, ge=1, le=4),
     max_cost: int | None = Query(None, description="Max price in tenths"),
@@ -154,6 +156,7 @@ async def get_buy_candidates(
 
 
 @router.get("/captains", response_model=APIResponse[list[CaptainPick]])
+@cached("decisions:captains", ttl_seconds=3600)
 async def get_captain_picks(
     limit: int = Query(15, ge=1, le=50),
     session: AsyncSession = Depends(get_session),
@@ -244,6 +247,7 @@ async def get_captain_picks(
 
 
 @router.get("/chips", response_model=APIResponse[list[ChipAdvice]])
+@cached("decisions:chips", ttl_seconds=3600)
 async def get_chip_advice(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[list[ChipAdvice]]:
@@ -273,6 +277,7 @@ async def get_chip_advice(
 
 
 @router.get("/differentials", response_model=APIResponse[list[DifferentialPick]])
+@cached("decisions:differentials", ttl_seconds=3600)
 async def get_differentials(
     max_ownership: Decimal = Query(Decimal("5.0")),
     limit: int = Query(20, ge=1, le=50),
@@ -328,6 +333,7 @@ async def get_differentials(
 
 
 @router.get("/price-changes", response_model=APIResponse[PriceChangePrediction])
+@cached("decisions:prices", ttl_seconds=1800)
 async def get_price_changes(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[PriceChangePrediction]:

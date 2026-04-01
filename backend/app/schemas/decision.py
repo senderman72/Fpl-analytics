@@ -96,6 +96,23 @@ class PriceChangePrediction(BaseModel):
     last_updated: str | None = None
 
 
+class OvernightChange(BaseModel):
+    player_id: int
+    web_name: str
+    shirt_url: str | None = None
+    team_short_name: str
+    position: int
+    old_price: int
+    new_price: int
+    change: int  # +1 or -1 (in tenths)
+
+
+class OvernightChanges(BaseModel):
+    risers: list[OvernightChange]
+    fallers: list[OvernightChange]
+    date: str  # ISO date of the change
+
+
 class GWPrediction(BaseModel):
     gw_id: int
     predicted_points: Decimal

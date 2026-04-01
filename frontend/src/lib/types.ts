@@ -208,6 +208,23 @@ export interface PriceChangeCandidate {
   predicted_price: number | null;
 }
 
+export interface OvernightChange {
+  player_id: number;
+  web_name: string;
+  shirt_url: string | null;
+  team_short_name: string;
+  position: number;
+  old_price: number;
+  new_price: number;
+  change: number;
+}
+
+export interface OvernightChanges {
+  risers: OvernightChange[];
+  fallers: OvernightChange[];
+  date: string;
+}
+
 export interface PriceChangePrediction {
   risers: PriceChangeCandidate[];
   fallers: PriceChangeCandidate[];

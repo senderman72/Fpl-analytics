@@ -1,5 +1,5 @@
 import { get } from './client';
-import type { BuyCandidate, CaptainPick, ChipAdvice, DifferentialPick, PriceChangePrediction } from '../lib/types';
+import type { BuyCandidate, CaptainPick, ChipAdvice, DifferentialPick, OvernightChanges, PriceChangePrediction } from '../lib/types';
 
 export function getBuyCandidates(params?: {
   position?: number;
@@ -26,4 +26,8 @@ export function getDifferentials(params?: {
 
 export function getPriceChanges() {
   return get<PriceChangePrediction>('/decisions/price-changes');
+}
+
+export function getOvernightChanges() {
+  return get<OvernightChanges>('/decisions/overnight-changes');
 }

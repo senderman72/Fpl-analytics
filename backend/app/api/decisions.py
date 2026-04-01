@@ -22,6 +22,8 @@ from app.schemas.decision import (
     CaptainPick,
     ChipAdvice,
     DifferentialPick,
+    OvernightChange,
+    OvernightChanges,
     PriceChangeCandidate,
     PriceChangePrediction,
 )
@@ -460,6 +462,149 @@ async def get_price_changes(
             fallers=fallers,
             already_changed=changed,
             last_updated=last_updated,
+        )
+    )
+
+
+@router.get(
+    "/overnight-changes",
+    response_model=APIResponse[OvernightChanges],
+)
+@cached("decisions:overnight", ttl_seconds=1800)
+async def get_overnight_changes(
+    session: AsyncSession = Depends(get_session),
+) -> APIResponse[OvernightChanges]:
+    """Compare the two most recent price snapshots to find overnight changes."""
+    # Find the two most recent distinct snapshot dates
+    dates_result = await session.execute(
+        select(PlayerPrice.recorded_at)
+        .distinct()
+        .order_by(PlayerPrice.recorded_at.desc())
+        .limit(2)
+    )
+    dates = [row[0] for row in dates_result.all()]
+
+    if len(dates) < 2:
+        # Not enough data — fall back to current cost_change_event
+        return await _overnight_from_cost_change(session)
+
+    latest_date, prev_date = dates[0], dates[1]
+
+    # Get both snapshots
+    latest_result = await session.execute(
+        select(PlayerPrice).where(PlayerPrice.recorded_at == latest_date)
+    )
+    latest_prices = {
+        p.player_id: p.cost for p in latest_result.scalars().all()
+    }
+
+    prev_result = await session.execute(
+        select(PlayerPrice).where(PlayerPrice.recorded_at == prev_date)
+    )
+    prev_prices = {
+        p.player_id: p.cost for p in prev_result.scalars().all()
+    }
+
+    if not latest_prices or not prev_prices:
+        return APIResponse(
+            data=OvernightChanges(
+                risers=[], fallers=[], date=latest_date.isoformat()
+            )
+        )
+
+    # Find changes
+    changed_ids = [
+        pid
+        for pid in latest_prices
+        if pid in prev_prices and latest_prices[pid] != prev_prices[pid]
+    ]
+
+    if not changed_ids:
+        return APIResponse(
+            data=OvernightChanges(
+                risers=[], fallers=[], date=latest_date.isoformat()
+            )
+        )
+
+    # Fetch player info for changed players
+    player_result = await session.execute(
+        select(Player, Team.short_name, Team.code.label("team_code"))
+        .join(Team, Player.team_id == Team.id)
+        .where(Player.id.in_(changed_ids))
+    )
+
+    risers: list[OvernightChange] = []
+    fallers: list[OvernightChange] = []
+
+    for player, team_short, team_code in player_result.all():
+        old = prev_prices[player.id]
+        new = latest_prices[player.id]
+        change = new - old
+        entry = OvernightChange(
+            player_id=player.id,
+            web_name=player.web_name,
+            shirt_url=shirt_url(team_code, player.position),
+            team_short_name=team_short,
+            position=player.position,
+            old_price=old,
+            new_price=new,
+            change=change,
+        )
+        if change > 0:
+            risers.append(entry)
+        else:
+            fallers.append(entry)
+
+    risers.sort(key=lambda c: c.change, reverse=True)
+    fallers.sort(key=lambda c: c.change)
+
+    return APIResponse(
+        data=OvernightChanges(
+            risers=risers, fallers=fallers, date=latest_date.isoformat()
+        )
+    )
+
+
+async def _overnight_from_cost_change(
+    session: AsyncSession,
+) -> APIResponse[OvernightChanges]:
+    """Fallback: use cost_change_event when only 1 snapshot exists."""
+    import datetime as dt
+
+    result = await session.execute(
+        select(Player, Team.short_name, Team.code.label("team_code"))
+        .join(Team, Player.team_id == Team.id)
+        .where(Player.cost_change_event != 0)
+    )
+
+    risers: list[OvernightChange] = []
+    fallers: list[OvernightChange] = []
+
+    for player, team_short, team_code in result.all():
+        change = player.cost_change_event
+        entry = OvernightChange(
+            player_id=player.id,
+            web_name=player.web_name,
+            shirt_url=shirt_url(team_code, player.position),
+            team_short_name=team_short,
+            position=player.position,
+            old_price=player.now_cost - change,
+            new_price=player.now_cost,
+            change=change,
+        )
+        if change > 0:
+            risers.append(entry)
+        else:
+            fallers.append(entry)
+
+    risers.sort(key=lambda c: c.change, reverse=True)
+    fallers.sort(key=lambda c: c.change)
+
+    return APIResponse(
+        data=OvernightChanges(
+            risers=risers,
+            fallers=fallers,
+            date=dt.date.today().isoformat(),
         )
     )
 

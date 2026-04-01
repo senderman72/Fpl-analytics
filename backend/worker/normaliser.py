@@ -31,6 +31,14 @@ def normalise_team(raw: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _optional_decimal(
+    raw: dict[str, Any], key: str
+) -> Decimal | None:
+    """Return Decimal if key exists and is not None, else None."""
+    val = raw.get(key)
+    return Decimal(str(val)) if val is not None else None
+
+
 def normalise_player(raw: dict[str, Any]) -> dict[str, Any]:
     """Map a raw FPL API element object to the players table columns."""
     return {
@@ -48,11 +56,15 @@ def normalise_player(raw: dict[str, Any]) -> dict[str, Any]:
         "is_penalty_taker": _is_penalty_taker(raw),
         "is_set_piece_taker": _is_set_piece_taker(raw),
         "selected_by_percent": Decimal(str(raw.get("selected_by_percent", "0"))),
+        "ep_next": _optional_decimal(raw, "ep_next"),
+        "form": _optional_decimal(raw, "form"),
+        "points_per_game": _optional_decimal(raw, "points_per_game"),
         "transfers_in_event": raw.get("transfers_in_event", 0),
         "transfers_out_event": raw.get("transfers_out_event", 0),
         "cost_change_event": raw.get("cost_change_event", 0),
         "updated_at": dt.datetime.now(dt.UTC),
     }
+
 
 
 def normalise_gameweek(raw: dict[str, Any]) -> dict[str, Any]:

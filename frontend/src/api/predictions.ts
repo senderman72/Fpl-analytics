@@ -1,5 +1,5 @@
 import { get } from './client';
-import type { PredictionOut } from '../lib/types';
+import type { AccuracyResponse, PredictionOut } from '../lib/types';
 
 export function getPredictions(gwId: number, params?: {
   position?: number;
@@ -14,4 +14,8 @@ export function getUpcomingPredictions(params?: {
   limit?: number;
 }) {
   return get<PredictionOut[]>('/predictions/upcoming', params);
+}
+
+export function getAccuracy(params?: { gw_id?: number }) {
+  return get<AccuracyResponse>('/predictions/accuracy', params);
 }

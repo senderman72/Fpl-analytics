@@ -49,4 +49,13 @@ beat_schedule = {
         "task": "worker.tasks.recompute_form_cache",
         "schedule": crontab(hour=4, minute=45, day_of_week=2),
     },
+    # ── Post-sync: backfill actuals then generate new predictions ──
+    "backfill-actuals": {
+        "task": "worker.tasks.backfill_actuals",
+        "schedule": crontab(hour=5, minute=0, day_of_week=2),
+    },
+    "run-predictions": {
+        "task": "worker.tasks.run_predictions",
+        "schedule": crontab(hour=5, minute=15, day_of_week=2),
+    },
 }

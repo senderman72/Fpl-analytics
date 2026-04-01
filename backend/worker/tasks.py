@@ -447,6 +447,11 @@ def recompute_form_cache() -> dict[str, int]:
                 total_bonus = sum(s.bonus for s in stats)
                 total_bps = sum(s.bps for s in stats)
                 total_cs = sum(s.clean_sheets for s in stats)
+                total_ict = sum(float(s.ict_index) for s in stats)
+                total_threat = sum(float(s.threat) for s in stats)
+                total_creativity = sum(float(s.creativity) for s in stats)
+                total_saves = sum(s.saves for s in stats)
+                total_gc = sum(s.goals_conceded for s in stats)
 
                 pts_per_game = (
                     Decimal(total_pts) / games_started
@@ -463,7 +468,32 @@ def recompute_form_cache() -> dict[str, int]:
                     if games_started
                     else Decimal("0")
                 )
-                available_mins = len(stats) * 90
+                ict_avg = (
+                    Decimal(str(total_ict / games_started))
+                    if games_started
+                    else Decimal("0")
+                )
+                threat_avg = (
+                    Decimal(str(total_threat / games_started))
+                    if games_started
+                    else Decimal("0")
+                )
+                creativity_avg = (
+                    Decimal(str(total_creativity / games_started))
+                    if games_started
+                    else Decimal("0")
+                )
+                saves_avg = (
+                    Decimal(str(total_saves / games_started))
+                    if games_started
+                    else Decimal("0")
+                )
+                goals_conceded_avg = (
+                    Decimal(str(total_gc / games_started))
+                    if games_started
+                    else Decimal("0")
+                )
+                available_mins = window * 90
                 mins_pct = (
                     Decimal(total_mins) / Decimal(available_mins) * 100
                     if available_mins
@@ -484,22 +514,22 @@ def recompute_form_cache() -> dict[str, int]:
                         "bps_avg": round(bps_avg, 1),
                         "minutes_pct": round(mins_pct, 2),
                         "clean_sheets": total_cs,
+                        "ict_avg": round(ict_avg, 1),
+                        "threat_avg": round(threat_avg, 1),
+                        "creativity_avg": round(creativity_avg, 1),
+                        "saves_avg": round(saves_avg, 1),
+                        "goals_conceded_avg": round(goals_conceded_avg, 1),
                     }
                 )
 
-        # Bulk upsert
+        # Delete all then insert fresh — ensures stale players are removed
+        session.query(PlayerFormCache).delete()
+
         if all_rows:
             stmt = insert(PlayerFormCache).values(all_rows)
-            stmt = stmt.on_conflict_do_update(
-                index_elements=["player_id", "gw_window"],
-                set_={
-                    c.name: c
-                    for c in stmt.excluded
-                    if c.name not in ("player_id", "gw_window")
-                },
-            )
             session.execute(stmt)
-            session.commit()
+
+        session.commit()
 
     logger.info("recompute_form_cache complete: %d rows", len(all_rows))
 
@@ -510,6 +540,99 @@ def recompute_form_cache() -> dict[str, int]:
     warm_caches.delay()
 
     return {"form_rows": len(all_rows)}
+
+
+@celery_app.task(name="worker.tasks.backfill_actuals")
+def backfill_actuals() -> dict[str, int]:
+    """Fill actual_points on PredictionLog rows from finished gameweeks."""
+    from app.models.prediction_log import PredictionLog
+
+    with sync_session_factory() as session:
+        # Find prediction logs missing actual points for finished GWs
+        logs = (
+            session.query(PredictionLog)
+            .join(Gameweek, PredictionLog.gameweek_id == Gameweek.id)
+            .filter(
+                PredictionLog.actual_points.is_(None),
+                Gameweek.is_finished == True,  # noqa: E712
+            )
+            .all()
+        )
+
+        if not logs:
+            logger.info("backfill_actuals: no rows to backfill")
+            return {"backfilled": 0}
+
+        # Collect (player_id, gw_id) pairs to look up
+        keys = {(log.player_id, log.gameweek_id) for log in logs}
+
+        # Sum total_points per (player_id, gw_id) — handles DGWs
+        from sqlalchemy import func as sa_func
+
+        actuals = (
+            session.query(
+                PlayerGWStats.player_id,
+                PlayerGWStats.gameweek_id,
+                sa_func.sum(PlayerGWStats.total_points).label("total"),
+            )
+            .filter(
+                sa_func.tuple_(
+                    PlayerGWStats.player_id, PlayerGWStats.gameweek_id
+                ).in_(keys)
+            )
+            .group_by(PlayerGWStats.player_id, PlayerGWStats.gameweek_id)
+            .all()
+        )
+
+        actual_map = {(r.player_id, r.gameweek_id): r.total for r in actuals}
+
+        filled = 0
+        for log in logs:
+            pts = actual_map.get((log.player_id, log.gameweek_id))
+            if pts is not None:
+                log.actual_points = pts
+                filled += 1
+
+        session.commit()
+
+    logger.info("backfill_actuals: filled %d/%d rows", filled, len(logs))
+
+    sync_invalidate_pattern("predictions:accuracy*")
+
+    return {"backfilled": filled}
+
+
+@celery_app.task(name="worker.tasks.run_predictions")
+def run_predictions() -> dict[str, int]:
+    """Train model and store predictions for the next unfinished GW."""
+    from app.services.points_model import (
+        predict_gw,
+        store_prediction_logs,
+        train_model,
+    )
+
+    train_model()
+
+    with sync_session_factory() as session:
+        next_gw = (
+            session.query(Gameweek.id)
+            .filter(Gameweek.is_finished == False)  # noqa: E712
+            .order_by(Gameweek.id)
+            .first()
+        )
+
+    if not next_gw:
+        logger.warning("run_predictions: no upcoming GW found")
+        return {"predictions": 0}
+
+    gw_id = next_gw[0]
+    predictions = predict_gw(gw_id)
+    stored = store_prediction_logs(predictions, gw_id)
+
+    sync_invalidate_pattern("predictions:*")
+
+    logger.info("run_predictions: GW %d, %d predictions stored", gw_id, stored)
+    return {"gw_id": gw_id, "predictions": stored}
 
 
 @celery_app.task(name="worker.tasks.warm_caches")

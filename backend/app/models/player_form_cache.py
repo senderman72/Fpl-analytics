@@ -25,6 +25,13 @@ class PlayerFormCache(Base):
     bps_avg: Mapped[Decimal] = mapped_column(Numeric(5, 1), server_default="0")
     minutes_pct: Mapped[Decimal] = mapped_column(Numeric(5, 2), server_default="0")
     clean_sheets: Mapped[int] = mapped_column(SmallInteger, server_default="0")
+    ict_avg: Mapped[Decimal] = mapped_column(Numeric(5, 1), server_default="0")
+    threat_avg: Mapped[Decimal] = mapped_column(Numeric(5, 1), server_default="0")
+    creativity_avg: Mapped[Decimal] = mapped_column(Numeric(5, 1), server_default="0")
+    saves_avg: Mapped[Decimal] = mapped_column(Numeric(4, 1), server_default="0")
+    goals_conceded_avg: Mapped[Decimal] = mapped_column(
+        Numeric(4, 1), server_default="0"
+    )
     updated_at: Mapped[datetime] = mapped_column(server_default="now()")
 
     player: Mapped["Player"] = relationship(back_populates="form_cache")  # noqa: F821

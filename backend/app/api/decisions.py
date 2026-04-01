@@ -96,7 +96,12 @@ async def get_buy_candidates(
             PlayerFormCache,
             (PlayerFormCache.player_id == Player.id) & (PlayerFormCache.gw_window == 6),
         )
-        .where(Player.status == "a", PlayerFormCache.minutes_pct > 30)
+        .where(
+            Player.status == "a",
+            PlayerFormCache.minutes_pct > 50,
+            (Player.chance_of_playing_next_round >= 50)
+            | (Player.chance_of_playing_next_round.is_(None)),
+        )
     )
     if position:
         stmt = stmt.where(Player.position == position)
@@ -170,7 +175,12 @@ async def get_captain_picks(
             PlayerFormCache,
             (PlayerFormCache.player_id == Player.id) & (PlayerFormCache.gw_window == 6),
         )
-        .where(Player.status == "a", PlayerFormCache.minutes_pct > 50)
+        .where(
+            Player.status == "a",
+            PlayerFormCache.minutes_pct > 50,
+            (Player.chance_of_playing_next_round >= 50)
+            | (Player.chance_of_playing_next_round.is_(None)),
+        )
     )
     result = await session.execute(stmt)
     rows = result.all()
@@ -292,8 +302,10 @@ async def get_differentials(
         )
         .where(
             Player.status == "a",
-            PlayerFormCache.minutes_pct > 40,
+            PlayerFormCache.minutes_pct > 50,
             PlayerFormCache.total_points > 10,
+            (Player.chance_of_playing_next_round >= 50)
+            | (Player.chance_of_playing_next_round.is_(None)),
         )
     )
     result = await session.execute(stmt)

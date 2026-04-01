@@ -275,6 +275,30 @@ export interface LiveGWResponse {
   players: LivePlayerScore[];
 }
 
+export interface PositionAccuracy {
+  position: number;
+  position_name: string;
+  mae: string;
+  count: number;
+}
+
+export interface GWAccuracy {
+  gameweek_id: number;
+  mae: string;
+  count: number;
+}
+
+export interface AccuracyResponse {
+  mae: string;
+  rmse: string;
+  pearson_r: string | null;
+  captain_hit_rate: string | null;
+  total_predictions: number;
+  total_gameweeks: number;
+  by_position: PositionAccuracy[];
+  per_gameweek: GWAccuracy[];
+}
+
 export const POSITIONS: Record<number, string> = {
   1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD',
 };

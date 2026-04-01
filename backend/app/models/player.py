@@ -42,6 +42,9 @@ class Player(Base):
     selected_by_percent: Mapped[Decimal] = mapped_column(
         Numeric(5, 2), server_default="0"
     )
+    ep_next: Mapped[Decimal | None] = mapped_column(Numeric(4, 1))
+    form: Mapped[Decimal | None] = mapped_column(Numeric(4, 1))
+    points_per_game: Mapped[Decimal | None] = mapped_column(Numeric(4, 1))
     transfers_in_event: Mapped[int] = mapped_column(Integer, server_default="0")
     transfers_out_event: Mapped[int] = mapped_column(Integer, server_default="0")
     cost_change_event: Mapped[int] = mapped_column(SmallInteger, server_default="0")

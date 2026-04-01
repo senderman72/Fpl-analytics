@@ -5,8 +5,10 @@ import asyncio
 from fastapi import APIRouter, Query
 
 from app.core.cache import cached
+from app.schemas.accuracy import AccuracyResponse
 from app.schemas.common import APIResponse
 from app.schemas.decision import PredictionOut
+from app.services.accuracy import compute_accuracy
 from app.services.points_model import predict_gw, predict_upcoming
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
@@ -59,3 +61,13 @@ async def get_upcoming_predictions(
             "total": len(predictions),
         },
     )
+
+
+@router.get("/accuracy", response_model=APIResponse[AccuracyResponse])
+@cached("predictions:accuracy", ttl_seconds=3600)
+async def get_accuracy(
+    gw_id: int | None = Query(None),
+) -> APIResponse[AccuracyResponse]:
+    """Get prediction accuracy metrics (MAE, RMSE, Pearson r, by position)."""
+    result = await asyncio.to_thread(compute_accuracy, gw_id)
+    return APIResponse(data=result)

@@ -1,0 +1,121 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ShareButtons from '../components/ShareButtons';
+import AccuracyChart from '../components/AccuracyChart.tsx';
+import { getAccuracy } from '../api/predictions';
+import { buildCanonical } from '../lib/seo';
+
+let accuracy = null;
+try {
+  accuracy = await getAccuracy();
+} catch {
+  // API may not have data yet
+}
+---
+
+<Layout title="Accuracy" description="FPL Analytics prediction accuracy — MAE, RMSE, Pearson correlation, and captain hit rate tracked across gameweeks.">
+  <div class="flex items-baseline justify-between mb-6">
+    <h1 class="page-title">Model Accuracy</h1>
+    {accuracy && accuracy.total_gameweeks > 0 && (
+      <span class="text-gray-400 text-sm">{accuracy.total_gameweeks} gameweeks tracked</span>
+    )}
+  </div>
+  <div class="mb-6">
+    <ShareButtons client:idle url={buildCanonical('/accuracy')} text="FPL prediction model accuracy dashboard" />
+  </div>
+
+  {!accuracy || accuracy.total_predictions === 0 ? (
+    <div class="card p-8 text-center">
+      <p class="text-gray-400 text-lg mb-2">No predictions tracked yet</p>
+      <p class="text-gray-500 text-sm">Accuracy data will appear after the model generates predictions and a gameweek finishes.</p>
+    </div>
+  ) : (
+    <>
+      <!-- Stat cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="card p-4 text-center">
+          <div class="text-3xl font-extrabold text-fpl-cyan tabular-nums">{accuracy.mae}</div>
+          <div class="stat-label mt-1">MAE</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div class="text-3xl font-extrabold text-fpl-cyan tabular-nums">{accuracy.rmse}</div>
+          <div class="stat-label mt-1">RMSE</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div class="text-3xl font-extrabold text-fpl-green tabular-nums">{accuracy.pearson_r ?? '—'}</div>
+          <div class="stat-label mt-1">Pearson r</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div class="text-3xl font-extrabold text-fpl-green tabular-nums">
+            {accuracy.captain_hit_rate ? `${(parseFloat(accuracy.captain_hit_rate) * 100).toFixed(0)}%` : '—'}
+          </div>
+          <div class="stat-label mt-1">Captain hit rate</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      {(accuracy.per_gameweek.length > 0 || accuracy.by_position.length > 0) && (
+        <div class="card p-5 mb-8">
+          <AccuracyChart
+            client:idle
+            perGameweek={JSON.stringify(accuracy.per_gameweek)}
+            byPosition={JSON.stringify(accuracy.by_position)}
+          />
+        </div>
+      )}
+
+      <!-- By-position table -->
+      {accuracy.by_position.length > 0 && (
+        <div class="card overflow-hidden mb-8">
+          <table class="w-full text-sm">
+            <thead class="bg-fpl-card">
+              <tr class="text-left text-gray-400 border-b border-gray-700">
+                <th class="py-2.5 px-4 font-medium">Position</th>
+                <th class="py-2.5 px-4 text-right font-medium">MAE</th>
+                <th class="py-2.5 px-4 text-right font-medium">Predictions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accuracy.by_position.map(bp => (
+                <tr class="border-b border-gray-800/40">
+                  <td class="py-2 px-4 text-white font-medium">{bp.position_name}</td>
+                  <td class="py-2 px-4 text-right tabular-nums text-fpl-cyan">{bp.mae}</td>
+                  <td class="py-2 px-4 text-right tabular-nums text-gray-400">{bp.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <!-- Methodology -->
+      <div class="card p-5 border-l-3 border-fpl-cyan">
+        <h2 class="text-white font-bold text-sm mb-2">About these metrics</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+          <div class="flex items-start gap-2">
+            <span class="text-fpl-cyan font-bold shrink-0">MAE</span>
+            <span class="text-gray-400">Mean Absolute Error — average distance between predicted and actual points</span>
+          </div>
+          <div class="flex items-start gap-2">
+            <span class="text-fpl-cyan font-bold shrink-0">RMSE</span>
+            <span class="text-gray-400">Root Mean Squared Error — penalises large errors more heavily than MAE</span>
+          </div>
+          <div class="flex items-start gap-2">
+            <span class="text-fpl-cyan font-bold shrink-0">Pearson r</span>
+            <span class="text-gray-400">Correlation between predicted and actual — 1.0 is perfect, 0 is random</span>
+          </div>
+          <div class="flex items-start gap-2">
+            <span class="text-fpl-cyan font-bold shrink-0">Captain hit</span>
+            <span class="text-gray-400">How often the model's #1 pick was the best captain among the top 5</span>
+          </div>
+        </div>
+        <p class="text-gray-400 text-xs mt-3">
+          Model v2 uses 27 features including form, xG, FPL signals, fixture difficulty, and team strength. Accuracy is computed on finished gameweeks only.
+        </p>
+      </div>
+    </>
+  )}
+  <script is:inline>
+    if (typeof window.gtag === 'function') gtag('event', 'accuracy_viewed');
+  </script>
+</Layout>

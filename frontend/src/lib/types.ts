@@ -343,6 +343,32 @@ export interface PlayerComparison {
   ep_next: string | null;
 }
 
+export interface TransferSuggestion {
+  sell_player_id: number;
+  sell_web_name: string;
+  sell_shirt_url: string | null;
+  sell_team_short: string;
+  sell_predicted_pts: string;
+  sell_fixtures: { opponent: string; difficulty: number; is_home: boolean }[];
+  buy_player_id: number;
+  buy_web_name: string;
+  buy_shirt_url: string | null;
+  buy_team_short: string;
+  buy_now_cost: number;
+  buy_predicted_pts: string;
+  buy_fixtures: { opponent: string; difficulty: number; is_home: boolean }[];
+  points_gain: string;
+  price_diff: number;
+  score: string;
+  reasoning: string;
+}
+
+export interface TransferPlan {
+  suggestions: TransferSuggestion[];
+  free_transfers: number;
+  bank: number;
+}
+
 export const POSITIONS: Record<number, string> = {
   1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD',
 };

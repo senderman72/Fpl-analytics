@@ -2,6 +2,7 @@ import { createSignal, createResource, For, Show } from 'solid-js';
 import type { MyTeamResponse, MyTeamPick } from '../lib/types';
 import { getMyTeam } from '../api/my-team';
 import { fdrColor, formatCost } from '../lib/types';
+import TransferSuggestions from './TransferSuggestions';
 
 function PlayerCard(props: { pick: MyTeamPick; compact?: boolean }) {
   const p = props.pick;
@@ -198,6 +199,11 @@ export default function MyTeamView(props: { initialId?: number }) {
                     {(p) => <PlayerCard pick={p} compact />}
                   </For>
                 </div>
+              </div>
+
+              {/* Transfer Suggestions */}
+              <div class="card p-4 sm:p-5">
+                <TransferSuggestions managerId={managerId()} />
               </div>
             </div>
           );

@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(make check:*)"
+      "Bash(make check:*)",
+      "Bash(ls frontend/src/api/*.ts)",
+      "Bash(xargs -I{} basename {} .ts)"
     ]
   }
 }

@@ -58,14 +58,14 @@ function progressBarColor(isRiser: boolean, progress: number): string {
     </p>
   </div>
 
-  <!-- Last Night's Price Changes -->
+  <!-- Overnight Price Changes -->
   {overnight && (overnight.risers.length > 0 || overnight.fallers.length > 0) && (
     <div class="mb-8">
       <h2 class="flex items-center gap-2 text-white font-bold mb-3">
         <svg class="w-5 h-5 text-fpl-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
         </svg>
-        Last Night's Price Changes
+        Price Changes — {new Date(overnight.date + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
         <span class="text-xs text-gray-400 font-normal">({overnight.risers.length + overnight.fallers.length} players)</span>
       </h2>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">

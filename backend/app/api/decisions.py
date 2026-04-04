@@ -1,6 +1,7 @@
 """Decision support endpoints — buys, captains, chips, differentials."""
 
 import asyncio
+import datetime as dt
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query
@@ -351,7 +352,6 @@ async def get_price_changes(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[PriceChangePrediction]:
     """Predict which players are likely to rise or fall in price tonight."""
-    from datetime import UTC, datetime
 
     from app.models.transfer_snapshot import TransferSnapshot
     from app.services.price_change import (
@@ -369,7 +369,9 @@ async def get_price_changes(
     rows = result.all()
 
     # Fetch today's transfer snapshots for velocity
-    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = dt.datetime.now(dt.UTC).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
     snap_result = await session.execute(
         select(TransferSnapshot)
         .where(TransferSnapshot.recorded_at >= today_start)
@@ -466,11 +468,18 @@ async def get_price_changes(
     )
 
 
+def _is_snapshot_fresh(snapshot_date: dt.date) -> bool:
+    """Check if a snapshot date is recent enough to display (today or yesterday)."""
+    today = dt.datetime.now(dt.UTC).date()
+    age = (today - snapshot_date).days
+    return age <= 1
+
+
 @router.get(
     "/overnight-changes",
     response_model=APIResponse[OvernightChanges],
 )
-@cached("decisions:overnight", ttl_seconds=1800)
+@cached("decisions:overnight", ttl_seconds=300)
 async def get_overnight_changes(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[OvernightChanges]:
@@ -489,6 +498,14 @@ async def get_overnight_changes(
         return await _overnight_from_cost_change(session)
 
     latest_date, prev_date = dates[0], dates[1]
+
+    # If snapshots are stale (>1 day old), return empty — don't show old data
+    if not _is_snapshot_fresh(latest_date):
+        return APIResponse(
+            data=OvernightChanges(
+                risers=[], fallers=[], date=latest_date.isoformat()
+            )
+        )
 
     # Get both snapshots
     latest_result = await session.execute(
@@ -569,7 +586,6 @@ async def _overnight_from_cost_change(
     session: AsyncSession,
 ) -> APIResponse[OvernightChanges]:
     """Fallback: use cost_change_event when only 1 snapshot exists."""
-    import datetime as dt
 
     result = await session.execute(
         select(Player, Team.short_name, Team.code.label("team_code"))
@@ -604,7 +620,7 @@ async def _overnight_from_cost_change(
         data=OvernightChanges(
             risers=risers,
             fallers=fallers,
-            date=dt.date.today().isoformat(),
+            date=dt.datetime.now(dt.UTC).date().isoformat(),
         )
     )
 

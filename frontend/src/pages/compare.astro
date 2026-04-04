@@ -1,0 +1,30 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ShareButtons from '../components/ShareButtons';
+import CompareTool from '../components/CompareTool';
+import { getPlayerIds } from '../api/players';
+import { buildCanonical } from '../lib/seo';
+
+const allPlayers = await getPlayerIds();
+const rawIds = Astro.url.searchParams.get('ids') || '';
+const initialIds = rawIds.replace(/[^0-9,]/g, '').slice(0, 50);
+---
+
+<Layout title="Compare Players" description="Compare FPL players side by side — form, xG, fixtures, BPS, and more with radar chart overlay.">
+  <div class="flex items-baseline justify-between mb-6">
+    <h1 class="page-title">Compare Players</h1>
+  </div>
+  <div class="mb-6">
+    <ShareButtons client:idle url={buildCanonical(`/compare${initialIds ? `?ids=${initialIds}` : ''}`)} text="FPL player comparison — side-by-side stats" />
+  </div>
+
+  <CompareTool
+    client:idle
+    allPlayers={JSON.stringify(allPlayers)}
+    initialIds={initialIds}
+  />
+
+  <script is:inline>
+    if (typeof window.gtag === 'function') gtag('event', 'compare_viewed');
+  </script>
+</Layout>

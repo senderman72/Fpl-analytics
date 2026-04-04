@@ -316,6 +316,33 @@ export interface AccuracyResponse {
   per_gameweek: GWAccuracy[];
 }
 
+export interface PlayerComparison {
+  id: number;
+  web_name: string;
+  first_name: string;
+  second_name: string;
+  team_short_name: string;
+  position: number;
+  shirt_url: string | null;
+  team_badge_url: string | null;
+  now_cost: number;
+  selected_by_percent: string | null;
+  form_points: number | null;
+  pts_per_game: string | null;
+  xgi_per_90: string | null;
+  minutes_pct: string | null;
+  bps_avg: string | null;
+  clean_sheets: number | null;
+  goals: number | null;
+  assists: number | null;
+  season_xg: string | null;
+  season_xa: string | null;
+  season_xgi: string | null;
+  fdr_next_5: string | null;
+  fixture_count: number;
+  ep_next: string | null;
+}
+
 export const POSITIONS: Record<number, string> = {
   1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD',
 };

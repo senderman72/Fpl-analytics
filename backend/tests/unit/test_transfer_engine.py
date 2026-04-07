@@ -2,9 +2,6 @@
 
 from decimal import Decimal
 
-import pytest
-
-from app.schemas.my_team import FixturePreview
 from app.schemas.transfer import TransferPlan, TransferSuggestion
 
 

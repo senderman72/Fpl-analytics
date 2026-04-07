@@ -1,6 +1,5 @@
 """Tests for prediction model player filtering — status + chance_of_playing."""
 
-import pytest
 
 
 class TestPredictionStatusFilter:
@@ -42,7 +41,8 @@ class TestPredictionStatusFilter:
         """Players with < 50% minutes should be excluded regardless of status."""
         from app.services.points_model import _should_include_player
 
-        assert _should_include_player(status="a", chance=None, minutes_pct=30.0) is False
+        result = _should_include_player(status="a", chance=None, minutes_pct=30.0)
+        assert result is False
 
     def test_status_filter_suspended(self) -> None:
         """Players with status 's' (suspended) should be excluded."""
@@ -64,4 +64,5 @@ class TestPredictionStatusFilter:
         """Doubtful with None chance — FPL sometimes has this, treat as excluded."""
         from app.services.points_model import _should_include_player
 
-        assert _should_include_player(status="d", chance=None, minutes_pct=80.0) is False
+        result = _should_include_player(status="d", chance=None, minutes_pct=80.0)
+        assert result is False

@@ -2,8 +2,6 @@
 
 import datetime as dt
 
-import pytest
-
 from app.schemas.decision import OvernightChanges
 
 

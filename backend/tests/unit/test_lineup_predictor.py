@@ -2,8 +2,6 @@
 
 from decimal import Decimal
 
-import pytest
-
 from app.schemas.lineup import LineupPlayer, PredictedLineup
 
 

@@ -1,6 +1,7 @@
 """Gameweek and fixture endpoints."""
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import or_, select
@@ -119,17 +120,30 @@ async def get_live_gw(
     gw_id: int,
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[LiveGWResponse]:
-    """Fetch live scores for an active gameweek from the FPL API."""
-    teams_result = await session.execute(select(Team.id, Team.short_name, Team.code))
-    team_map = {tid: (sn, code) for tid, sn, code in teams_result.all()}
+    """Fetch live scores for an active gameweek.
+
+    Reads from Redis cache (populated by ``sync_live_gw`` Celery task)
+    when available, falling back to a direct FPL API call.
+    """
+    teams_result = await session.execute(
+        select(Team.id, Team.short_name, Team.code),
+    )
+    team_map = {
+        tid: (sn, code) for tid, sn, code in teams_result.all()
+    }
 
     players_result = await session.execute(
-        select(Player.id, Player.web_name, Player.team_id, Player.position)
+        select(
+            Player.id, Player.web_name, Player.team_id, Player.position,
+        ),
     )
-    player_map = {pid: (wn, tid, pos) for pid, wn, tid, pos in players_result.all()}
+    player_map = {
+        pid: (wn, tid, pos)
+        for pid, wn, tid, pos in players_result.all()
+    }
 
     fix_result = await session.execute(
-        select(Fixture).where(Fixture.gameweek_id == gw_id)
+        select(Fixture).where(Fixture.gameweek_id == gw_id),
     )
     db_fixtures = fix_result.scalars().all()
 
@@ -145,10 +159,14 @@ async def get_live_gw(
                 home_team_short=home_info[0],
                 away_team_short=away_info[0],
                 home_badge_url=(
-                    f"{pl_cdn}/badges/100/t{home_info[1]}.png" if home_info[1] else None
+                    f"{pl_cdn}/badges/100/t{home_info[1]}.png"
+                    if home_info[1]
+                    else None
                 ),
                 away_badge_url=(
-                    f"{pl_cdn}/badges/100/t{away_info[1]}.png" if away_info[1] else None
+                    f"{pl_cdn}/badges/100/t{away_info[1]}.png"
+                    if away_info[1]
+                    else None
                 ),
                 home_goals=f.home_goals or 0,
                 away_goals=f.away_goals or 0,
@@ -158,39 +176,66 @@ async def get_live_gw(
             )
         )
 
-    # Live player data from FPL API
+    # Live player data — try Redis cache, fall back to FPL API
+    live_data = await _get_live_data(gw_id)
+
     players: list[LivePlayerScore] = []
-    try:
-        live_data = await fetch_live_gw(gw_id)
-        for elem in live_data.get("elements", []):
-            pid = elem["id"]
-            stats = elem.get("stats", {})
-            p_info = player_map.get(pid)
-            if not p_info:
-                continue
-            web_name, team_id, position = p_info
-            t_info = team_map.get(team_id, ("???", 0))
-            total_pts = stats.get("total_points", 0)
-            if stats.get("minutes", 0) == 0 and total_pts == 0:
-                continue
-            players.append(
-                LivePlayerScore(
-                    player_id=pid,
-                    web_name=web_name,
-                    shirt_url=shirt_url(t_info[1], position),
-                    minutes=stats.get("minutes", 0),
-                    goals_scored=stats.get("goals_scored", 0),
-                    assists=stats.get("assists", 0),
-                    bonus=stats.get("bonus", 0),
-                    bps=stats.get("bps", 0),
-                    total_points=total_pts,
-                )
+    for elem in live_data.get("elements", []):
+        pid = elem["id"]
+        stats = elem.get("stats", {})
+        p_info = player_map.get(pid)
+        if not p_info:
+            continue
+        web_name, team_id, position = p_info
+        t_info = team_map.get(team_id, ("???", 0))
+        total_pts = stats.get("total_points", 0)
+        if stats.get("minutes", 0) == 0 and total_pts == 0:
+            continue
+        players.append(
+            LivePlayerScore(
+                player_id=pid,
+                web_name=web_name,
+                shirt_url=shirt_url(t_info[1], position),
+                minutes=stats.get("minutes", 0),
+                goals_scored=stats.get("goals_scored", 0),
+                assists=stats.get("assists", 0),
+                bonus=stats.get("bonus", 0),
+                bps=stats.get("bps", 0),
+                total_points=total_pts,
             )
-    except Exception:
-        logger.warning("Failed to fetch live GW %d from FPL API", gw_id, exc_info=True)
+        )
 
     players.sort(key=lambda p: p.total_points, reverse=True)
 
     return APIResponse(
-        data=LiveGWResponse(gameweek_id=gw_id, fixtures=fixtures, players=players)
+        data=LiveGWResponse(
+            gameweek_id=gw_id, fixtures=fixtures, players=players,
+        ),
     )
+
+
+async def _get_live_data(gw_id: int) -> dict[str, Any]:
+    """Read live GW data from Redis cache, falling back to FPL API."""
+    from app.core.cache import _redis
+
+    if _redis is not None:
+        try:
+            cached = await _redis.get(f"live:gw:{gw_id}")
+            if cached is not None:
+                import json
+
+                return json.loads(cached)
+        except Exception:
+            logger.warning(
+                "Redis GET failed for live:gw:%d", gw_id,
+            )
+
+    try:
+        return await fetch_live_gw(gw_id)
+    except Exception:
+        logger.warning(
+            "FPL API live fetch failed for GW %d",
+            gw_id,
+            exc_info=True,
+        )
+        return {"elements": []}

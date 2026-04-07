@@ -29,6 +29,7 @@ router = APIRouter(tags=["my-team"])
 
 
 @router.get("/my-team/{manager_id}", response_model=APIResponse[MyTeamResponse])
+@cached("my-team:squad", ttl_seconds=300)
 async def get_my_team(
     manager_id: int,
     session: AsyncSession = Depends(get_session),

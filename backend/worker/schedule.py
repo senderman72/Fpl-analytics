@@ -12,12 +12,18 @@ Total API calls: ~600/day to FPL (576 from 5-min bootstrap
 +fixtures, ~500 from daily history).
 FPL rate limit: ~1 req/s = 86,400/day — we use <1%.
 
-Live scores: fetched on-demand by /live/{gw_id} endpoint (every 60s).
+Live scores: Celery task every 30s caches in Redis; endpoint
+reads from cache with FPL API fallback.
 """
 
 from celery.schedules import crontab
 
 beat_schedule = {
+    # ── Every 30 seconds — live scores during matches ──
+    "sync-live-gw": {
+        "task": "worker.tasks.sync_live_gw",
+        "schedule": 30.0,
+    },
     # ── Every 5 minutes — always fresh ──
     "sync-bootstrap": {
         "task": "worker.tasks.sync_bootstrap",

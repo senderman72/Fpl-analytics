@@ -22,6 +22,7 @@ from app.models.transfer_snapshot import TransferSnapshot
 from app.services.fpl_client import (
     fetch_bootstrap,
     fetch_fixtures,
+    fetch_live_gw,
     fetch_player_summary,
 )
 from app.services.understat_client import fetch_league_players
@@ -633,6 +634,60 @@ def run_predictions() -> dict[str, int]:
 
     logger.info("run_predictions: GW %d, %d predictions stored", gw_id, stored)
     return {"gw_id": gw_id, "predictions": stored}
+
+
+@celery_app.task(name="worker.tasks.sync_live_gw")
+def sync_live_gw() -> dict[str, object]:
+    """Fetch live scores for the current GW and cache in Redis.
+
+    Only runs when a GW is in progress (is_current and not finished).
+    Stores the raw FPL API response in Redis with a 45s TTL so the
+    ``/live/{gw_id}`` endpoint can serve from cache.
+    """
+    import json
+
+    import redis as sync_redis
+
+    from app.core.config import get_settings
+
+    with sync_session_factory() as session:
+        current = (
+            session.query(Gameweek.id, Gameweek.is_finished)
+            .filter(Gameweek.is_current == True)  # noqa: E712
+            .first()
+        )
+
+    if current is None or current.is_finished:
+        return {"status": "skipped", "reason": "no active GW"}
+
+    gw_id = current.id
+    live_data = asyncio.run(fetch_live_gw(gw_id))
+
+    settings = get_settings()
+    try:
+        client = sync_redis.from_url(
+            settings.redis_url, decode_responses=True,
+        )
+        client.set(
+            f"live:gw:{gw_id}",
+            json.dumps(live_data),
+            ex=45,
+        )
+        client.close()
+    except Exception:
+        logger.warning(
+            "sync_live_gw: Redis store failed for GW %d",
+            gw_id,
+            exc_info=True,
+        )
+
+    player_count = len(live_data.get("elements", []))
+    logger.info(
+        "sync_live_gw: cached GW %d (%d players)",
+        gw_id,
+        player_count,
+    )
+    return {"gw_id": gw_id, "players": player_count}
 
 
 @celery_app.task(name="worker.tasks.warm_caches")

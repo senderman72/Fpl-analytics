@@ -8,8 +8,9 @@ Frequency tiers (designed to stay under FPL API rate limits):
 - Daily: price snapshot, player history (~500 calls, rate-limited to 1/s)
 - Daily: form cache recompute, predictions (DB only, no API calls)
 
-Total API calls: ~600/day to FPL (576 from 5-min bootstrap+fixtures, ~500 from daily history)
-FPL rate limit: ~1 req/s = 86,400/day — we use <1% of that.
+Total API calls: ~600/day to FPL (576 from 5-min bootstrap
++fixtures, ~500 from daily history).
+FPL rate limit: ~1 req/s = 86,400/day — we use <1%.
 
 Live scores: fetched on-demand by /live/{gw_id} endpoint (every 60s).
 """

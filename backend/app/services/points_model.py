@@ -25,7 +25,10 @@ from app.services.fpl_urls import shirt_url
 
 logger = logging.getLogger(__name__)
 
-MODEL_VERSION = "v2"
+MODEL_VERSION = "v3"
+
+# Position IDs: 1=GK, 2=DEF, 3=MID, 4=FWD
+_POSITIONS = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
 
 # Statuses eligible for predictions — active + doubtful with valid chance
 _ELIGIBLE_STATUSES = {"a", "d"}
@@ -49,7 +52,11 @@ def _should_include_player(
 
 
 # Module-level model cache, guarded by _model_lock
+# Maps position (1-4) → (model, scaler) pairs
 _model_lock = threading.Lock()
+_models: dict[int, RidgeCV] = {}
+_scalers: dict[int, StandardScaler] = {}
+# Fallback single model for positions with too few samples
 _model: RidgeCV | None = None
 _scaler: StandardScaler | None = None
 
@@ -164,12 +171,20 @@ def _build_feature_vector(
     return features
 
 
-def train_model() -> tuple[RidgeCV, StandardScaler]:
-    """Train the ridge regression model on the last 6 gameweeks of data."""
-    global _model, _scaler
+def _collect_training_data() -> tuple[
+    dict[int, list[list[float]]],
+    dict[int, list[float]],
+    dict[int, list[float]],
+    list[list[float]],
+    list[float],
+    list[float],
+    list[int],
+]:
+    """Collect and split training data by position.
 
+    Returns per-position X/y/weights and combined X/y/weights plus GW IDs.
+    """
     with sync_session_factory() as session:
-        # Find the last 6 finished GWs
         finished_gws = (
             session.query(Gameweek.id)
             .filter(Gameweek.is_finished == True)  # noqa: E712
@@ -180,13 +195,8 @@ def train_model() -> tuple[RidgeCV, StandardScaler]:
         recent_gw_ids = [gw[0] for gw in finished_gws]
 
         if not recent_gw_ids:
-            logger.warning("No finished GWs, skipping model fit")
-            return RidgeCV(), StandardScaler()
+            return {}, {}, {}, [], [], [], []
 
-        gw_min = min(recent_gw_ids)
-        gw_max = max(recent_gw_ids)
-
-        # Train on all stats from recent GWs where player played
         stats = (
             session.query(PlayerGWStats)
             .filter(
@@ -224,9 +234,16 @@ def train_model() -> tuple[RidgeCV, StandardScaler]:
         for gw in session.query(Gameweek).all():
             gw_double[gw.id] = gw.is_double
 
-    x_rows: list[list[float]] = []
-    y_rows: list[float] = []
-    weights: list[float] = []
+    gw_min = min(recent_gw_ids)
+    gw_max = max(recent_gw_ids)
+
+    # Split by position
+    pos_x: dict[int, list[list[float]]] = {i: [] for i in range(1, 5)}
+    pos_y: dict[int, list[float]] = {i: [] for i in range(1, 5)}
+    pos_w: dict[int, list[float]] = {i: [] for i in range(1, 5)}
+    all_x: list[list[float]] = []
+    all_y: list[float] = []
+    all_w: list[float] = []
 
     for s in stats:
         player = players.get(s.player_id)
@@ -234,28 +251,32 @@ def train_model() -> tuple[RidgeCV, StandardScaler]:
         xg = xg_data.get(s.player_id)
         fixture = fixtures.get(s.fixture_id)
 
-        if not player or not form:
+        if not player or not form or form.minutes_pct < 50:
             continue
 
-        # Training uses historical data — filter on form quality only,
-        # not current status (a player injured now may have scored in GW28)
-        if form.minutes_pct < 50:
-            continue
-
-        is_home = 1.0 if fixture and fixture.home_team_id == player.team_id else 0.0
+        is_home = (
+            1.0
+            if fixture and fixture.home_team_id == player.team_id
+            else 0.0
+        )
         fdr = (
-            float(fixture.home_difficulty if is_home else fixture.away_difficulty)
+            float(
+                fixture.home_difficulty if is_home else fixture.away_difficulty,
+            )
             if fixture and fixture.home_difficulty is not None
             else 3.0
         )
         is_dgw = 1.0 if gw_double.get(s.gameweek_id) else 0.0
 
-        # Team strength features
         team = teams.get(player.team_id)
         if is_home:
-            team_attack = float(team.strength_attack_home) if team else 1000.0
+            team_attack = (
+                float(team.strength_attack_home) if team else 1000.0
+            )
         else:
-            team_attack = float(team.strength_attack_away) if team else 1000.0
+            team_attack = (
+                float(team.strength_attack_away) if team else 1000.0
+            )
 
         opp_team_id = (
             fixture.away_team_id
@@ -265,92 +286,196 @@ def train_model() -> tuple[RidgeCV, StandardScaler]:
             else None
         )
         opp_team = teams.get(opp_team_id) if opp_team_id else None
-        if opp_team:
-            opp_defence = (
-                float(opp_team.strength_defence_away)
+        opp_defence = (
+            float(
+                opp_team.strength_defence_away
                 if is_home
-                else float(opp_team.strength_defence_home)
+                else opp_team.strength_defence_home,
             )
-        else:
-            opp_defence = 1000.0
+            if opp_team
+            else 1000.0
+        )
 
         features = _build_feature_vector(
-            form, xg, player, fdr, is_home, is_dgw, team_attack, opp_defence
+            form, xg, player, fdr, is_home, is_dgw,
+            team_attack, opp_defence,
         )
-        x_rows.append(features)
-        y_rows.append(float(s.total_points))
+        target = float(s.total_points)
 
-        # Bug #6: recency weighting — most recent GW = 6x, oldest = 1x
         gw_range = gw_max - gw_min
         weight = (
             1 + 5 * (s.gameweek_id - gw_min) / gw_range
             if gw_range > 0
             else 1.0
         )
-        weights.append(weight)
 
-    if len(x_rows) < 100:
-        logger.warning(
-            "Not enough training data (%d rows), skipping model fit", len(x_rows)
-        )
-        return RidgeCV(), StandardScaler()
+        pos = player.position
+        pos_x[pos].append(features)
+        pos_y[pos].append(target)
+        pos_w[pos].append(weight)
 
+        all_x.append(features)
+        all_y.append(target)
+        all_w.append(weight)
+
+    return pos_x, pos_y, pos_w, all_x, all_y, all_w, recent_gw_ids
+
+
+def _fit_ridge(
+    x_rows: list[list[float]],
+    y_rows: list[float],
+    weights: list[float],
+) -> tuple[RidgeCV, StandardScaler] | None:
+    """Fit a RidgeCV model. Returns None if insufficient data."""
+    if len(x_rows) < 30:
+        return None
     x = np.array(x_rows)
     y = np.array(y_rows)
     w = np.array(weights)
-
     scaler = StandardScaler()
     x_scaled = scaler.fit_transform(x)
-
     model = RidgeCV(alphas=[0.1, 0.5, 1.0, 5.0, 10.0])
     model.fit(x_scaled, y, sample_weight=w)
+    return model, scaler
 
-    with _model_lock:
-        _model = model
-        _scaler = scaler
 
-    r2 = model.score(x_scaled, y)
+def train_model() -> None:
+    """Train position-specific Ridge models + a fallback global model."""
+    global _model, _scaler, _models, _scalers
+
+    (
+        pos_x, pos_y, pos_w,
+        all_x, all_y, all_w,
+        recent_gw_ids,
+    ) = _collect_training_data()
+
+    if not recent_gw_ids or len(all_x) < 100:
+        logger.warning(
+            "Not enough training data (%d rows), skipping",
+            len(all_x),
+        )
+        return
+
+    # Train per-position models
+    new_models: dict[int, RidgeCV] = {}
+    new_scalers: dict[int, StandardScaler] = {}
+
+    for pos in range(1, 5):
+        result = _fit_ridge(pos_x[pos], pos_y[pos], pos_w[pos])
+        if result:
+            m, s = result
+            r2 = m.score(s.transform(np.array(pos_x[pos])), np.array(pos_y[pos]))
+            new_models[pos] = m
+            new_scalers[pos] = s
+            logger.info(
+                "Model %s trained: %d samples, R²=%.3f, alpha=%.1f",
+                _POSITIONS[pos],
+                len(pos_x[pos]),
+                r2,
+                m.alpha_,
+            )
+        else:
+            logger.warning(
+                "Not enough data for %s (%d samples), using fallback",
+                _POSITIONS[pos],
+                len(pos_x[pos]),
+            )
+
+    # Train global fallback
+    fallback = _fit_ridge(all_x, all_y, all_w)
+    if not fallback:
+        return
+
+    fb_model, fb_scaler = fallback
+    r2 = fb_model.score(
+        fb_scaler.transform(np.array(all_x)), np.array(all_y),
+    )
     logger.info(
-        "Points model v2 trained on %d samples from GWs %s, R²=%.3f, alpha=%.1f",
-        len(x_rows),
+        "Fallback model trained: %d samples from GWs %s, R²=%.3f",
+        len(all_x),
         sorted(recent_gw_ids),
         r2,
-        model.alpha_,
     )
 
-    # Log feature weights for diagnostics
-    coefs = dict(zip(_FEATURE_NAMES, model.coef_, strict=True))
-    sorted_coefs = sorted(coefs.items(), key=lambda x: abs(x[1]), reverse=True)
-    logger.info(
-        "Feature weights (top 10): %s",
-        ", ".join(f"{k}={v:.3f}" for k, v in sorted_coefs[:10]),
-    )
+    with _model_lock:
+        _models = new_models
+        _scalers = new_scalers
+        _model = fb_model
+        _scaler = fb_scaler
 
-    return model, scaler
+
+def _get_model_for_position(
+    pos: int,
+) -> tuple[RidgeCV, StandardScaler] | None:
+    """Return the position-specific model or the global fallback."""
+    if pos in _models and pos in _scalers:
+        return _models[pos], _scalers[pos]
+    if _model is not None and _scaler is not None:
+        return _model, _scaler
+    return None
+
+
+def _predict_one(
+    pos: int, features: list[float],
+) -> float:
+    """Predict points for a single feature vector using the right model."""
+    pair = _get_model_for_position(pos)
+    if pair is None:
+        return 0.0
+    model, scaler = pair
+    x = np.array([features])
+    x_scaled = scaler.transform(x)
+    return max(0, float(model.predict(x_scaled)[0]))
 
 
 def get_model_diagnostics() -> dict | None:
     """Return model diagnostics for inspection."""
     if _model is None or _scaler is None:
         return None
-    coefs = dict(
-        zip(_FEATURE_NAMES, [round(float(c), 4) for c in _model.coef_], strict=True)
+
+    per_position = {}
+    for pos in range(1, 5):
+        if pos in _models:
+            m = _models[pos]
+            coefs = dict(
+                zip(
+                    _FEATURE_NAMES,
+                    [round(float(c), 4) for c in m.coef_],
+                    strict=True,
+                )
+            )
+            per_position[_POSITIONS[pos]] = {
+                "alpha": round(float(m.alpha_), 2),
+                "coefficients": coefs,
+            }
+
+    fallback_coefs = dict(
+        zip(
+            _FEATURE_NAMES,
+            [round(float(c), 4) for c in _model.coef_],
+            strict=True,
+        )
     )
     return {
         "model_version": MODEL_VERSION,
-        "alpha": round(float(_model.alpha_), 2),
         "n_features": len(_FEATURE_NAMES),
         "feature_names": _FEATURE_NAMES,
-        "coefficients": coefs,
+        "fallback_alpha": round(float(_model.alpha_), 2),
+        "fallback_coefficients": fallback_coefs,
+        "position_models": per_position,
     }
+
+
+def _ensure_trained() -> bool:
+    """Ensure at least the fallback model is trained."""
+    if _model is None or _scaler is None:
+        train_model()
+    return _model is not None and _scaler is not None
 
 
 def predict_gw(gw_id: int) -> list[dict]:
     """Generate predicted points for all active players for a given GW."""
-    if _model is None or _scaler is None:
-        train_model()
-
-    if _model is None or _scaler is None:
+    if not _ensure_trained():
         return []
 
     with sync_session_factory() as session:
@@ -424,23 +549,13 @@ def predict_gw(gw_id: int) -> list[dict]:
             else:
                 opp_defence = 1000.0
 
-            features = np.array(
-                [
-                    _build_feature_vector(
-                        form,
-                        xg,
-                        player,
-                        fdr,
-                        1.0 if is_home else 0.0,
-                        1.0 if is_dgw else 0.0,
-                        team_attack,
-                        opp_defence,
-                    )
-                ]
+            fv = _build_feature_vector(
+                form, xg, player, fdr,
+                1.0 if is_home else 0.0,
+                1.0 if is_dgw else 0.0,
+                team_attack, opp_defence,
             )
-            features_scaled = _scaler.transform(features)
-            pred = max(0, float(_model.predict(features_scaled)[0]))
-            total_predicted += pred
+            total_predicted += _predict_one(player.position, fv)
 
         predictions.append(
             {
@@ -449,12 +564,16 @@ def predict_gw(gw_id: int) -> list[dict]:
                 "shirt_url": shirt_url(team_code, player.position),
                 "team_short_name": team_short,
                 "position": player.position,
-                "predicted_points": round(Decimal(str(total_predicted)), 1),
+                "predicted_points": round(
+                    Decimal(str(total_predicted)), 1,
+                ),
                 "now_cost": player.now_cost,
             }
         )
 
-    predictions.sort(key=lambda p: float(p["predicted_points"]), reverse=True)
+    predictions.sort(
+        key=lambda p: float(p["predicted_points"]), reverse=True,
+    )
     return predictions
 
 
@@ -464,12 +583,7 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
     Uses last-6-GW form data and fixture difficulty for each upcoming GW.
     Returns enriched dicts with per-GW breakdowns.
     """
-    global _model, _scaler
-
-    if _model is None or _scaler is None:
-        train_model()
-
-    if _model is None or _scaler is None:
+    if not _ensure_trained():
         return []
 
     with sync_session_factory() as session:
@@ -568,23 +682,13 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
                 else:
                     opp_defence = 1000.0
 
-                features = np.array(
-                    [
-                        _build_feature_vector(
-                            form,
-                            xg,
-                            player,
-                            fdr,
-                            1.0 if is_home else 0.0,
-                            1.0 if is_dgw else 0.0,
-                            team_attack,
-                            opp_defence,
-                        )
-                    ]
+                fv = _build_feature_vector(
+                    form, xg, player, fdr,
+                    1.0 if is_home else 0.0,
+                    1.0 if is_dgw else 0.0,
+                    team_attack, opp_defence,
                 )
-                features_scaled = _scaler.transform(features)
-                pred = max(0, float(_model.predict(features_scaled)[0]))
-                gw_predicted += pred
+                gw_predicted += _predict_one(player.position, fv)
 
             per_gw.append(
                 {

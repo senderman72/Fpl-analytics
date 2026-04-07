@@ -1,8 +1,10 @@
-import { createSignal, createResource, For, Show } from 'solid-js';
+import { createSignal, For, Show } from 'solid-js';
+import { QueryClientProvider, createQuery } from '@tanstack/solid-query';
 import { getPlayers } from '../api/players';
 import { POSITIONS, formatCost } from '../lib/types';
 import type { PlayerSummary } from '../lib/types';
 import { slugify } from '../lib/seo';
+import { createQueryClient } from '../lib/queryClient';
 
 const BADGE_CLASSES: Record<number, string> = {
   1: 'bg-amber-500/15 text-amber-400',
@@ -11,21 +13,24 @@ const BADGE_CLASSES: Record<number, string> = {
   4: 'bg-red-500/15 text-red-400',
 };
 
-export default function PlayerTable(props: { initial: PlayerSummary[] }) {
+function PlayerTableInner(props: { initial: PlayerSummary[] }) {
   const [position, setPosition] = createSignal<number | undefined>();
   const [search, setSearch] = createSignal('');
   const [sortBy, setSortBy] = createSignal('form_points');
 
-  const fetchParams = () => ({
-    position: position(),
-    search: search().length >= 2 ? search() : undefined,
-    sort_by: sortBy(),
-    limit: 100,
-  });
+  const query = createQuery(() => ({
+    queryKey: ['players', position(), search().length >= 2 ? search() : '', sortBy()],
+    queryFn: () => getPlayers({
+      position: position(),
+      search: search().length >= 2 ? search() : undefined,
+      sort_by: sortBy(),
+      limit: 100,
+    }),
+    initialData: props.initial,
+    staleTime: 5 * 60 * 1000,
+  }));
 
-  const [players] = createResource(fetchParams, (p) => getPlayers(p), {
-    initialValue: props.initial,
-  });
+  const players = () => query.data ?? props.initial;
 
   return (
     <div>
@@ -80,7 +85,7 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
       </div>
 
       {/* Loading skeleton */}
-      <Show when={players.loading}>
+      <Show when={query.isLoading}>
         <div class="card p-4 space-y-3">
           {Array.from({ length: 8 }, () => (
             <div class="flex gap-4 animate-pulse">
@@ -95,7 +100,7 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
       </Show>
 
       {/* Mobile cards */}
-      <Show when={!players.loading}>
+      <Show when={!query.isLoading}>
         <div class="md:hidden space-y-2" data-testid="players-mobile">
           <For each={players()}>
             {(p) => (
@@ -235,5 +240,13 @@ export default function PlayerTable(props: { initial: PlayerSummary[] }) {
         </div>
       </Show>
     </div>
+  );
+}
+
+export default function PlayerTable(props: { initial: PlayerSummary[] }) {
+  return (
+    <QueryClientProvider client={createQueryClient()}>
+      <PlayerTableInner initial={props.initial} />
+    </QueryClientProvider>
   );
 }

@@ -1,4 +1,5 @@
-import { createSignal, createResource, For, Show } from 'solid-js';
+import { createSignal, For, Show } from 'solid-js';
+import { createQuery } from '@tanstack/solid-query';
 import { getTransferSuggestions } from '../api/my-team';
 import { formatCost, fdrColor } from '../lib/types';
 import type { TransferSuggestion } from '../lib/types';
@@ -180,10 +181,14 @@ function SuggestionCard(props: { s: TransferSuggestion; idx: number; freeTransfe
 }
 
 export default function TransferSuggestions(props: Props) {
-  const [plan] = createResource(
-    () => props.managerId || null,
-    (id) => getTransferSuggestions(id),
-  );
+  const planQuery = createQuery(() => ({
+    queryKey: ['transfers', props.managerId],
+    queryFn: () => getTransferSuggestions(props.managerId),
+    enabled: !!props.managerId,
+    staleTime: 5 * 60 * 1000,
+  }));
+
+  const plan = () => planQuery.data;
 
   return (
     <div>
@@ -199,19 +204,19 @@ export default function TransferSuggestions(props: Props) {
         Suggested Transfers
       </h3>
 
-      <Show when={plan.loading}>
+      <Show when={planQuery.isLoading}>
         <div style={{ color: '#9ca3af', 'font-size': '0.875rem', padding: '1rem', 'text-align': 'center' }}>
           Analysing your squad...
         </div>
       </Show>
 
-      <Show when={plan.error}>
+      <Show when={planQuery.isError}>
         <div style={{ color: '#9ca3af', 'font-size': '0.875rem', padding: '1rem', 'text-align': 'center' }}>
           Could not load transfer suggestions.
         </div>
       </Show>
 
-      <Show when={!plan.loading && !plan.error && plan()}>
+      <Show when={!planQuery.isLoading && !planQuery.isError && plan()}>
         {(() => {
           const p = plan()!;
           return (

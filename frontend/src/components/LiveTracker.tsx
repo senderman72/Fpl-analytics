@@ -1,7 +1,8 @@
-import { createSignal, createResource, For, Show, onCleanup } from 'solid-js';
+import { createSignal, For, Show, onCleanup } from 'solid-js';
+import { QueryClientProvider, createQuery } from '@tanstack/solid-query';
 import type { LiveGWResponse } from '../lib/types';
-
 import { getLiveGW } from '../api/gameweeks';
+import { createQueryClient } from '../lib/queryClient';
 
 function hasLiveFixtures(data: LiveGWResponse | undefined): boolean {
   if (!data) return false;
@@ -18,63 +19,26 @@ function anyFixtureStarted(data: LiveGWResponse | undefined): boolean {
   return data.fixtures.some(f => f.started);
 }
 
-export default function LiveTracker(props: { currentGwId: number }) {
+function LiveTrackerInner(props: { currentGwId: number }) {
   const [lastUpdated, setLastUpdated] = createSignal(Date.now());
-  const [polling, setPolling] = createSignal(false);
+  const [shouldPoll, setShouldPoll] = createSignal(false);
 
-  const [data, { refetch }] = createResource(
-    () => props.currentGwId,
-    (gwId) => getLiveGW(gwId),
-  );
+  const query = createQuery(() => ({
+    queryKey: ['live', props.currentGwId],
+    queryFn: async () => {
+      const result = await getLiveGW(props.currentGwId);
+      setShouldPoll(hasLiveFixtures(result));
+      setLastUpdated(Date.now());
+      return result;
+    },
+    staleTime: 30_000,
+    refetchInterval: shouldPoll() ? 60_000 : false,
+    refetchIntervalInBackground: false,
+  }));
 
-  // Smart polling: only poll when fixtures are in progress
-  let pollInterval: ReturnType<typeof setInterval> | null = null;
+  const data = () => query.data;
 
-  function startPolling() {
-    if (pollInterval) return;
-    setPolling(true);
-    pollInterval = setInterval(async () => {
-      try {
-        await refetch();
-        setLastUpdated(Date.now());
-        if (allFixturesFinished(data())) {
-          stopPolling();
-        }
-      } catch {
-        // Polling failure is non-fatal; will retry next interval
-      }
-    }, 60_000);
-  }
-
-  function stopPolling() {
-    if (pollInterval) {
-      clearInterval(pollInterval);
-      pollInterval = null;
-    }
-    setPolling(false);
-  }
-
-  onCleanup(() => stopPolling());
-
-  // After initial fetch, decide whether to poll
-  const checkPolling = () => {
-    const d = data();
-    if (!d) return;
-    if (hasLiveFixtures(d)) {
-      startPolling();
-    } else {
-      stopPolling();
-    }
-  };
-
-  // Watch for data changes to start/stop polling
-  // Using a reactive effect via createResource's resolved state
-  const resolvedData = () => {
-    const d = data();
-    if (d) checkPolling();
-    return d;
-  };
-
+  const polling = () => hasLiveFixtures(data());
   const secondsAgo = () => Math.floor((Date.now() - lastUpdated()) / 1000);
 
   // Tick to update "seconds ago" display
@@ -83,11 +47,11 @@ export default function LiveTracker(props: { currentGwId: number }) {
   onCleanup(() => clearInterval(tickInterval));
 
   const gwStatus = () => {
-    const d = resolvedData();
+    const d = data();
     if (!d) return 'loading';
     if (hasLiveFixtures(d)) return 'live';
     if (allFixturesFinished(d)) return 'finished';
-    if (anyFixtureStarted(d)) return 'partial'; // some finished, none in progress
+    if (anyFixtureStarted(d)) return 'partial';
     return 'upcoming';
   };
 
@@ -110,7 +74,7 @@ export default function LiveTracker(props: { currentGwId: number }) {
             <span class="text-gray-400">Matches not started yet</span>
           )}
         </div>
-        <Show when={!data.loading} fallback={<span>Loading...</span>}>
+        <Show when={!query.isLoading} fallback={<span>Loading...</span>}>
           {polling() ? (
             <span>Updated {secondsAgo()}s ago · auto-refreshing</span>
           ) : (
@@ -119,7 +83,7 @@ export default function LiveTracker(props: { currentGwId: number }) {
         </Show>
       </div>
 
-      <Show when={resolvedData()} fallback={
+      <Show when={data()} fallback={
         <div class="card p-8 text-center text-gray-400">Loading live data...</div>
       }>
         {(liveData) => (
@@ -236,11 +200,19 @@ export default function LiveTracker(props: { currentGwId: number }) {
         )}
       </Show>
 
-      <Show when={data.error}>
+      <Show when={query.isError}>
         <div class="card p-8 text-center text-fpl-pink">
           Failed to load live data.{polling() ? ' Will retry in 60s.' : ''}
         </div>
       </Show>
     </div>
+  );
+}
+
+export default function LiveTracker(props: { currentGwId: number }) {
+  return (
+    <QueryClientProvider client={createQueryClient()}>
+      <LiveTrackerInner currentGwId={props.currentGwId} />
+    </QueryClientProvider>
   );
 }

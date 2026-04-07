@@ -1,7 +1,9 @@
-import { createSignal, createResource, For, Show } from 'solid-js';
-import type { MyTeamResponse, MyTeamPick } from '../lib/types';
+import { createSignal, For, Show } from 'solid-js';
+import { QueryClientProvider, createQuery } from '@tanstack/solid-query';
+import type { MyTeamPick } from '../lib/types';
 import { getMyTeam } from '../api/my-team';
 import { fdrColor, formatCost } from '../lib/types';
+import { createQueryClient } from '../lib/queryClient';
 import TransferSuggestions from './TransferSuggestions';
 
 function PlayerCard(props: { pick: MyTeamPick; compact?: boolean }) {
@@ -56,16 +58,20 @@ function PitchRow(props: { picks: MyTeamPick[] }) {
   );
 }
 
-export default function MyTeamView(props: { initialId?: number }) {
+function MyTeamViewInner(props: { initialId?: number }) {
   const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('fpl_manager_id') : null;
   const [managerId, setManagerId] = createSignal(props.initialId ?? (stored ? Number(stored) : 0));
   const [inputVal, setInputVal] = createSignal(String(managerId() || ''));
   const [submitted, setSubmitted] = createSignal(!!managerId());
 
-  const [data, { refetch }] = createResource(
-    () => submitted() ? managerId() : null,
-    (id) => id ? getMyTeam(id) : Promise.resolve(null as unknown as MyTeamResponse),
-  );
+  const query = createQuery(() => ({
+    queryKey: ['my-team', managerId()],
+    queryFn: () => getMyTeam(managerId()),
+    enabled: submitted() && managerId() > 0,
+    staleTime: 5 * 60 * 1000,
+  }));
+
+  const data = () => query.data;
 
   function handleSubmit(e: Event) {
     e.preventDefault();
@@ -76,7 +82,6 @@ export default function MyTeamView(props: { initialId?: number }) {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('fpl_manager_id', String(id));
     }
-    refetch();
   }
 
   // Group starting XI by position for pitch layout
@@ -127,17 +132,17 @@ export default function MyTeamView(props: { initialId?: number }) {
       </form>
 
       {/* Loading state */}
-      <Show when={data.loading}>
+      <Show when={query.isLoading}>
         <div class="card p-8 text-center text-gray-400">Loading your team...</div>
       </Show>
 
       {/* Error state */}
-      <Show when={data.error}>
-        <div class="card p-6 text-center text-fpl-pink">{String(data.error)}</div>
+      <Show when={query.isError}>
+        <div class="card p-6 text-center text-fpl-pink">{String(query.error)}</div>
       </Show>
 
       {/* Team data */}
-      <Show when={!data.loading && !data.error && data()}>
+      <Show when={!query.isLoading && !query.isError && data()}>
         {(d) => {
           const t = d();
           return (
@@ -227,5 +232,13 @@ export default function MyTeamView(props: { initialId?: number }) {
         }}
       </Show>
     </div>
+  );
+}
+
+export default function MyTeamView(props: { initialId?: number }) {
+  return (
+    <QueryClientProvider client={createQueryClient()}>
+      <MyTeamViewInner initialId={props.initialId} />
+    </QueryClientProvider>
   );
 }

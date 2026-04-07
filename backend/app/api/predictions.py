@@ -2,7 +2,7 @@
 
 import asyncio
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Path, Query
 
 from app.core.cache import cached
 from app.schemas.accuracy import AccuracyResponse
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/predictions", tags=["predictions"])
 @router.get("/gw/{gw_id}", response_model=APIResponse[list[PredictionOut]])
 @cached("predictions:gw", ttl_seconds=600)
 async def get_predictions(
-    gw_id: int,
+    gw_id: int = Path(..., ge=1, le=38),
     position: int | None = Query(None, ge=1, le=4),
     limit: int = Query(50, ge=1, le=500),
 ) -> APIResponse[list[PredictionOut]]:
@@ -77,7 +77,7 @@ async def get_accuracy(
     return APIResponse(data=result)
 
 
-@router.get("/model/diagnostics")
+@router.get("/model/diagnostics", include_in_schema=False)
 async def model_diagnostics() -> APIResponse[dict | None]:
     """Return model feature weights and hyperparameters for debugging."""
     diag = get_model_diagnostics()

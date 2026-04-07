@@ -1,7 +1,7 @@
-"""Ridge regression points prediction model — v2.
+"""Points prediction model — v3.1 (Ridge + HGBR ensemble).
 
-Trained on historical GW data with 25+ features, predicts expected points
-per player per fixture. Uses recency weighting and RidgeCV for alpha tuning.
+Position-specific models trained on historical GW data with 27 features.
+Ridge and HistGradientBoostingRegressor predictions averaged for each player.
 """
 
 import logging
@@ -169,9 +169,9 @@ def _build_feature_vector(
         1.0 if player.is_penalty_taker else 0.0,
         1.0 if player.is_set_piece_taker else 0.0,
     ]
-    assert len(features) == len(_FEATURE_NAMES), (
-        f"Feature count mismatch: {len(features)} vs {len(_FEATURE_NAMES)}"
-    )
+    if len(features) != len(_FEATURE_NAMES):
+        msg = f"Feature count mismatch: {len(features)} vs {len(_FEATURE_NAMES)}"
+        raise ValueError(msg)
     return features
 
 

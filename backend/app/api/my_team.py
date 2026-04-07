@@ -31,7 +31,7 @@ router = APIRouter(tags=["my-team"])
 @router.get("/my-team/{manager_id}", response_model=APIResponse[MyTeamResponse])
 @cached("my-team:squad", ttl_seconds=300)
 async def get_my_team(
-    manager_id: int,
+    manager_id: int = Path(..., ge=1, le=100_000_000),
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[MyTeamResponse]:
     """Fetch a manager's squad and enrich with form, predictions, and fixtures."""
@@ -166,20 +166,10 @@ async def get_my_team(
         else:
             bench.append(team_pick)
 
-    # Get team name from leagues
-    team_name = "My Team"
-    for league in manager.get("leagues", {}).get("classic", []):
-        if league.get("entry_can_admin"):
-            team_name = league.get("name", team_name)
-            break
-
-    # Try player name fields
     first = manager.get("player_first_name", "")
     last = manager.get("player_last_name", "")
     mgr_name = f"{first} {last}".strip() or "Unknown"
-
-    # Entry name from summary
-    team_name = manager.get("name", team_name)
+    team_name = manager.get("name", "My Team")
 
     return APIResponse(
         data=MyTeamResponse(

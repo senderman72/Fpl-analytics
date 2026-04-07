@@ -62,7 +62,11 @@ def sync_bootstrap() -> dict[str, int]:
         stmt = insert(Gameweek).values(gameweeks)
         stmt = stmt.on_conflict_do_update(
             index_elements=["id"],
-            set_={c.name: c for c in stmt.excluded if c.name != "id"},
+            set_={
+                c.name: c
+                for c in stmt.excluded
+                if c.name not in ("id", "is_double", "is_blank")
+            },
         )
         session.execute(stmt)
 
@@ -664,6 +668,7 @@ def sync_live_gw() -> dict[str, object]:
     live_data = asyncio.run(fetch_live_gw(gw_id))
 
     settings = get_settings()
+    client = None
     try:
         client = sync_redis.from_url(
             settings.redis_url, decode_responses=True,
@@ -673,13 +678,15 @@ def sync_live_gw() -> dict[str, object]:
             json.dumps(live_data),
             ex=45,
         )
-        client.close()
     except Exception:
         logger.warning(
             "sync_live_gw: Redis store failed for GW %d",
             gw_id,
             exc_info=True,
         )
+    finally:
+        if client is not None:
+            client.close()
 
     player_count = len(live_data.get("elements", []))
     logger.info(

@@ -192,14 +192,19 @@ async def get_captain_picks(
     current_result = await session.execute(
         select(Gameweek.id).where(Gameweek.is_current == True)  # noqa: E712
     )
-    current_gw = current_result.scalar() or 31
+    current_gw = current_result.scalar()
 
-    ceiling_result = await session.execute(
-        select(PlayerGWStats.player_id, func.max(PlayerGWStats.total_points))
-        .where(PlayerGWStats.gameweek_id > current_gw - 10)
-        .group_by(PlayerGWStats.player_id)
-    )
-    ceilings = {pid: ceil for pid, ceil in ceiling_result.all()}
+    ceilings: dict[int, int] = {}
+    if current_gw is not None:
+        ceiling_result = await session.execute(
+            select(
+                PlayerGWStats.player_id,
+                func.max(PlayerGWStats.total_points),
+            )
+            .where(PlayerGWStats.gameweek_id > current_gw - 10)
+            .group_by(PlayerGWStats.player_id)
+        )
+        ceilings = {pid: ceil for pid, ceil in ceiling_result.all()}
 
     # Next GW fixture info
     next_fixtures: dict[int, dict] = {}

@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -117,7 +117,7 @@ async def list_fixtures(
 
 @router.get("/live/{gw_id}", response_model=APIResponse[LiveGWResponse])
 async def get_live_gw(
-    gw_id: int,
+    gw_id: int = Path(..., ge=1, le=38),
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[LiveGWResponse]:
     """Fetch live scores for an active gameweek.
@@ -216,19 +216,13 @@ async def get_live_gw(
 
 async def _get_live_data(gw_id: int) -> dict[str, Any]:
     """Read live GW data from Redis cache, falling back to FPL API."""
-    from app.core.cache import _redis
+    import json
 
-    if _redis is not None:
-        try:
-            cached = await _redis.get(f"live:gw:{gw_id}")
-            if cached is not None:
-                import json
+    from app.core.cache import get_cached_raw
 
-                return json.loads(cached)
-        except Exception:
-            logger.warning(
-                "Redis GET failed for live:gw:%d", gw_id,
-            )
+    cached = await get_cached_raw(f"live:gw:{gw_id}")
+    if cached is not None:
+        return json.loads(cached)
 
     try:
         return await fetch_live_gw(gw_id)

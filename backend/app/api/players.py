@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -54,7 +54,7 @@ def _parse_compare_ids(ids_str: str) -> list[int]:
 async def list_players(
     position: int | None = Query(None, ge=1, le=4),
     team_id: int | None = Query(None),
-    search: str | None = Query(None, min_length=2),
+    search: str | None = Query(None, min_length=2, max_length=100),
     sort_by: str = Query(
         "form_points",
         pattern="^(form_points|now_cost|xgi_per_90|pts_per_game|minutes_pct)$",
@@ -268,7 +268,7 @@ async def list_player_ids(
 @router.get("/{player_id}", response_model=APIResponse[PlayerDetail])
 @cached("players:detail", ttl_seconds=300)
 async def get_player(
-    player_id: int,
+    player_id: int = Path(..., ge=1),
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[PlayerDetail]:
     result = await session.execute(
@@ -349,7 +349,7 @@ async def get_player(
 @router.get("/{player_id}/history", response_model=APIResponse[list[PlayerGWHistory]])
 @cached("players:history", ttl_seconds=300)
 async def get_player_history(
-    player_id: int,
+    player_id: int = Path(..., ge=1),
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[list[PlayerGWHistory]]:
     result = await session.execute(
@@ -387,7 +387,7 @@ async def get_player_history(
 @router.get("/{player_id}/fixtures", response_model=APIResponse[list[PlayerFixture]])
 @cached("players:fixtures", ttl_seconds=300)
 async def get_player_fixtures(
-    player_id: int,
+    player_id: int = Path(..., ge=1),
     limit: int = Query(8, ge=1, le=20),
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[list[PlayerFixture]]:

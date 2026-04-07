@@ -29,4 +29,3 @@ class RateLimiter:
 # Pre-configured limiters per source
 fpl_limiter = RateLimiter(min_interval=1.0)  # 1 req/s for FPL API
 understat_limiter = RateLimiter(min_interval=1.0)  # 1 req/s for Understat
-fbref_limiter = RateLimiter(min_interval=3.0)  # 1 req/3s for FBref

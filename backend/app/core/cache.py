@@ -157,6 +157,17 @@ def cached(prefix: str, ttl_seconds: int) -> Callable:
     return decorator
 
 
+async def get_cached_raw(key: str) -> str | None:
+    """Read a raw string value from Redis. Returns None on miss or error."""
+    if _redis is None:
+        return None
+    try:
+        return await _redis.get(key)
+    except Exception:
+        logger.warning("Redis GET failed for key %s", key, exc_info=True)
+        return None
+
+
 async def invalidate_pattern(pattern: str) -> None:
     """Delete all Redis keys matching *pattern* (glob-style).
 
@@ -189,12 +200,17 @@ def sync_invalidate_pattern(pattern: str) -> None:
     import redis as sync_redis
 
     settings = get_settings()
+    client = None
     try:
-        client = sync_redis.from_url(settings.redis_url, decode_responses=False)
+        client = sync_redis.from_url(
+            settings.redis_url, decode_responses=False,
+        )
         cursor = 0
         keys_to_delete: list[bytes] = []
         while True:
-            cursor, keys = client.scan(cursor=cursor, match=pattern, count=200)
+            cursor, keys = client.scan(
+                cursor=cursor, match=pattern, count=200,
+            )
             keys_to_delete.extend(keys)
             if cursor == 0:
                 break
@@ -202,8 +218,16 @@ def sync_invalidate_pattern(pattern: str) -> None:
         if keys_to_delete:
             client.delete(*keys_to_delete)
             logger.info(
-                "Sync-invalidated %d keys matching %s", len(keys_to_delete), pattern
+                "Sync-invalidated %d keys matching %s",
+                len(keys_to_delete),
+                pattern,
             )
-        client.close()
     except Exception:
-        logger.warning("Sync Redis invalidation failed for %s", pattern, exc_info=True)
+        logger.warning(
+            "Sync Redis invalidation failed for %s",
+            pattern,
+            exc_info=True,
+        )
+    finally:
+        if client is not None:
+            client.close()

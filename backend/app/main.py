@@ -41,8 +41,22 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
     from starlette.middleware.gzip import GZipMiddleware
+    from starlette.requests import Request
+    from starlette.responses import Response
 
+    class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+        async def dispatch(
+            self, request: Request, call_next: RequestResponseEndpoint,
+        ) -> Response:
+            response = await call_next(request)
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["Referrer-Policy"] = "no-referrer"
+            return response
+
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(GZipMiddleware, minimum_size=500)
 
     # --- Routers ---

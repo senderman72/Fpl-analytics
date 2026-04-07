@@ -20,7 +20,7 @@ router = APIRouter(prefix="/lineups", tags=["lineups"])
 
 
 @router.get("/predicted", response_model=APIResponse[list[PredictedLineup]])
-@cached("lineups:predicted", ttl_seconds=3600)
+@cached("lineups:predicted", ttl_seconds=300)
 async def get_predicted_lineups(
     team_id: int | None = Query(None, ge=1, le=20),
     session: AsyncSession = Depends(get_session),

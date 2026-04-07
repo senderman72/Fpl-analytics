@@ -19,7 +19,7 @@ router = APIRouter(prefix="/predictions", tags=["predictions"])
 
 
 @router.get("/gw/{gw_id}", response_model=APIResponse[list[PredictionOut]])
-@cached("predictions:gw", ttl_seconds=7200)
+@cached("predictions:gw", ttl_seconds=600)
 async def get_predictions(
     gw_id: int,
     position: int | None = Query(None, ge=1, le=4),
@@ -38,7 +38,7 @@ async def get_predictions(
 
 
 @router.get("/upcoming", response_model=APIResponse[list[PredictionOut]])
-@cached("predictions:upcoming", ttl_seconds=7200)
+@cached("predictions:upcoming", ttl_seconds=600)
 async def get_upcoming_predictions(
     horizon: int = Query(5, ge=1, le=10),
     position: int | None = Query(None, ge=1, le=4),

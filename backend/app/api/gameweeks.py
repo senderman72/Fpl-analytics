@@ -29,7 +29,7 @@ router = APIRouter(tags=["gameweeks"])
 
 
 @router.get("/gameweeks", response_model=APIResponse[list[GameweekOut]])
-@cached("gameweeks:list", ttl_seconds=3600)
+@cached("gameweeks:list", ttl_seconds=300)
 async def list_gameweeks(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[list[GameweekOut]]:
@@ -56,7 +56,7 @@ async def list_gameweeks(
 
 
 @router.get("/fixtures", response_model=APIResponse[list[FixtureOut]])
-@cached("fixtures:list", ttl_seconds=3600)
+@cached("fixtures:list", ttl_seconds=300)
 async def list_fixtures(
     gameweek_id: int | None = Query(None),
     team_id: int | None = Query(None),

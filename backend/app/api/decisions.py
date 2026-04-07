@@ -85,7 +85,7 @@ async def _get_fdr_upcoming(
 
 
 @router.get("/buys", response_model=APIResponse[list[BuyCandidate]])
-@cached("decisions:buys", ttl_seconds=3600)
+@cached("decisions:buys", ttl_seconds=300)
 async def get_buy_candidates(
     position: int | None = Query(None, ge=1, le=4),
     max_cost: int | None = Query(None, description="Max price in tenths"),
@@ -164,7 +164,7 @@ async def get_buy_candidates(
 
 
 @router.get("/captains", response_model=APIResponse[list[CaptainPick]])
-@cached("decisions:captains", ttl_seconds=3600)
+@cached("decisions:captains", ttl_seconds=300)
 async def get_captain_picks(
     limit: int = Query(15, ge=1, le=50),
     session: AsyncSession = Depends(get_session),
@@ -290,7 +290,7 @@ async def get_chip_advice(
 
 
 @router.get("/differentials", response_model=APIResponse[list[DifferentialPick]])
-@cached("decisions:differentials", ttl_seconds=3600)
+@cached("decisions:differentials", ttl_seconds=300)
 async def get_differentials(
     max_ownership: Decimal = Query(Decimal("5.0")),
     limit: int = Query(20, ge=1, le=50),

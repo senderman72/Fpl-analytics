@@ -182,9 +182,3 @@ export default function CookieConsent() {
     </>
   );
 }
-
-declare global {
-  interface Window {
-    gtag: (...args: unknown[]) => void;
-  }
-}

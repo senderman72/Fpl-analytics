@@ -3,7 +3,8 @@ import Layout from '../layouts/Layout.astro';
 import MyTeamView from '../components/MyTeamView';
 
 const idParam = Astro.url.searchParams.get('id');
-const initialId = idParam ? parseInt(idParam, 10) : undefined;
+const parsed = idParam ? parseInt(idParam, 10) : NaN;
+const initialId = !isNaN(parsed) && parsed > 0 && parsed < 1e9 ? parsed : undefined;
 ---
 
 <Layout title="My Team" description="View your FPL team — lineup, predicted points, upcoming fixtures, and transfer suggestions.">

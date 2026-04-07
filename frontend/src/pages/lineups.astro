@@ -8,8 +8,8 @@ import { buildCanonical } from '../lib/seo';
 let lineups = [];
 try {
   lineups = await getLineups();
-} catch (err) {
-  console.error('[lineups] Failed to fetch:', err);
+} catch {
+  // Backend unavailable — render empty state
 }
 ---
 

@@ -37,9 +37,13 @@ export default function ShareButtons(props: Props) {
 
   async function copyLink() {
     trackEvent('share_clicked', { method: 'copy_link' });
-    await navigator.clipboard.writeText(props.url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(props.url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable — ignore silently
+    }
   }
 
   const btnClass = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors';

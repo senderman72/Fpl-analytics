@@ -3,5 +3,6 @@ interface Props {
   schema: Record<string, unknown>;
 }
 const { schema } = Astro.props;
+const safeJson = JSON.stringify(schema).replace(/<\/script>/gi, '<\\/script>');
 ---
-<script type="application/ld+json" set:html={JSON.stringify(schema)} />
+<script type="application/ld+json" set:html={safeJson} />

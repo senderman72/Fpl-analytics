@@ -181,7 +181,7 @@ function PlayerTableInner(props: { initial: PlayerSummary[] }) {
               <tbody>
                 <For each={players()}>
                   {(p) => (
-                    <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors cursor-pointer" onClick={() => window.location.href = `/players/${slugify(p.id, p.first_name, p.second_name)}`}>
+                    <tr class="border-b border-gray-800/40 hover:bg-white/3 transition-colors">
                       <td class="py-2.5 px-4">
                         <div class="flex items-center gap-2.5">
                           <img

@@ -85,22 +85,26 @@ export default function CompareTool(props: Props) {
       .slice(0, 8);
   });
 
-  // Fetch comparison data when IDs change
-  createEffect(async () => {
+  // Fetch comparison data when IDs change (guarded against stale responses)
+  let fetchVersion = 0;
+  createEffect(() => {
     const ids = selectedIds();
     if (ids.length < 2) {
       setPlayers([]);
       return;
     }
+    const version = ++fetchVersion;
     setLoading(true);
-    try {
-      const result = await comparePlayers(ids);
-      setPlayers(result);
-    } catch {
-      setPlayers([]);
-    } finally {
-      setLoading(false);
-    }
+    comparePlayers(ids)
+      .then((result) => {
+        if (version === fetchVersion) setPlayers(result);
+      })
+      .catch(() => {
+        if (version === fetchVersion) setPlayers([]);
+      })
+      .finally(() => {
+        if (version === fetchVersion) setLoading(false);
+      });
   });
 
   // Sync URL
@@ -204,6 +208,7 @@ export default function CompareTool(props: Props) {
                   {p.first_name} {p.second_name}
                   <button
                     onClick={() => removePlayer(p.id)}
+                    aria-label={`Remove ${p.first_name} ${p.second_name}`}
                     style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', 'font-size': '1rem', 'line-height': '1' }}
                   >&times;</button>
                 </span>

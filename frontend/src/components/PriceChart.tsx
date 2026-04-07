@@ -15,8 +15,8 @@ export default function PriceChart(props: { history: string }) {
   });
 
   const prices = createMemo(() => data().map(h => h.value / 10));
-  const minPrice = createMemo(() => Math.min(...prices()) - 0.2);
-  const maxPrice = createMemo(() => Math.max(...prices()) + 0.2);
+  const minPrice = createMemo(() => prices().length ? Math.min(...prices()) - 0.2 : 0);
+  const maxPrice = createMemo(() => prices().length ? Math.max(...prices()) + 0.2 : 10);
 
   const options = createMemo<ApexOptions>(() => ({
     ...baseChartOptions,

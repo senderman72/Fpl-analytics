@@ -138,7 +138,7 @@ function MyTeamViewInner(props: { initialId?: number }) {
 
       {/* Error state */}
       <Show when={query.isError}>
-        <div class="card p-6 text-center text-fpl-pink">{String(query.error)}</div>
+        <div class="card p-6 text-center text-fpl-pink">Could not load team data. Please check your manager ID and try again.</div>
       </Show>
 
       {/* Team data */}

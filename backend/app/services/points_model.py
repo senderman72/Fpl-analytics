@@ -9,6 +9,7 @@ import threading
 from decimal import Decimal
 
 import numpy as np
+from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import RidgeCV
 from sklearn.preprocessing import StandardScaler
 
@@ -25,7 +26,7 @@ from app.services.fpl_urls import shirt_url
 
 logger = logging.getLogger(__name__)
 
-MODEL_VERSION = "v3"
+MODEL_VERSION = "v3.1"
 
 # Position IDs: 1=GK, 2=DEF, 3=MID, 4=FWD
 _POSITIONS = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
@@ -59,6 +60,9 @@ _scalers: dict[int, StandardScaler] = {}
 # Fallback single model for positions with too few samples
 _model: RidgeCV | None = None
 _scaler: StandardScaler | None = None
+# HGBR ensemble — same pattern per position + fallback
+_hgbr_models: dict[int, HistGradientBoostingRegressor] = {}
+_hgbr_model: HistGradientBoostingRegressor | None = None
 
 # Canonical feature order — train and predict MUST match exactly
 _FEATURE_NAMES: list[str] = [
@@ -339,9 +343,38 @@ def _fit_ridge(
     return model, scaler
 
 
+_HGBR_MIN_SAMPLES = 100
+
+
+def _fit_hgbr(
+    x_rows: list[list[float]],
+    y_rows: list[float],
+    weights: list[float],
+) -> HistGradientBoostingRegressor | None:
+    """Fit a HistGradientBoostingRegressor. None if insufficient data.
+
+    Requires more samples than Ridge because tree splits need
+    enough data per leaf (min_samples_leaf=10, max_depth=4).
+    """
+    if len(x_rows) < _HGBR_MIN_SAMPLES:
+        return None
+    x = np.array(x_rows)
+    y = np.array(y_rows)
+    w = np.array(weights)
+    model = HistGradientBoostingRegressor(
+        max_iter=200,
+        max_depth=4,
+        learning_rate=0.1,
+        min_samples_leaf=10,
+        random_state=42,
+    )
+    model.fit(x, y, sample_weight=w)
+    return model
+
+
 def train_model() -> None:
     """Train position-specific Ridge models + a fallback global model."""
-    global _model, _scaler, _models, _scalers
+    global _model, _scaler, _models, _scalers, _hgbr_models, _hgbr_model
 
     (
         pos_x, pos_y, pos_w,
@@ -381,17 +414,35 @@ def train_model() -> None:
                 len(pos_x[pos]),
             )
 
-    # Train global fallback
+    # Train HGBR per-position models
+    new_hgbr: dict[int, HistGradientBoostingRegressor] = {}
+    for pos in range(1, 5):
+        hgbr = _fit_hgbr(pos_x[pos], pos_y[pos], pos_w[pos])
+        if hgbr:
+            new_hgbr[pos] = hgbr
+            x_pos = np.array(pos_x[pos])
+            y_pos = np.array(pos_y[pos])
+            r2 = hgbr.score(x_pos, y_pos)
+            logger.info(
+                "HGBR %s trained: %d samples, R²=%.3f",
+                _POSITIONS[pos],
+                len(pos_x[pos]),
+                r2,
+            )
+
+    # Train global fallbacks (Ridge + HGBR)
     fallback = _fit_ridge(all_x, all_y, all_w)
     if not fallback:
         return
 
     fb_model, fb_scaler = fallback
+    fb_hgbr = _fit_hgbr(all_x, all_y, all_w)
+
     r2 = fb_model.score(
         fb_scaler.transform(np.array(all_x)), np.array(all_y),
     )
     logger.info(
-        "Fallback model trained: %d samples from GWs %s, R²=%.3f",
+        "Fallback Ridge trained: %d samples from GWs %s, R²=%.3f",
         len(all_x),
         sorted(recent_gw_ids),
         r2,
@@ -402,6 +453,8 @@ def train_model() -> None:
         _scalers = new_scalers
         _model = fb_model
         _scaler = fb_scaler
+        _hgbr_models = new_hgbr
+        _hgbr_model = fb_hgbr
 
 
 def _get_model_for_position(
@@ -418,14 +471,29 @@ def _get_model_for_position(
 def _predict_one(
     pos: int, features: list[float],
 ) -> float:
-    """Predict points for a single feature vector using the right model."""
-    pair = _get_model_for_position(pos)
-    if pair is None:
+    """Predict points using Ridge+HGBR ensemble (averaged).
+
+    Falls back to Ridge-only if no HGBR is available.
+    """
+    ridge_pair = _get_model_for_position(pos)
+    if ridge_pair is None:
         return 0.0
-    model, scaler = pair
-    x = np.array([features])
-    x_scaled = scaler.transform(x)
-    return max(0, float(model.predict(x_scaled)[0]))
+
+    ridge_model, scaler = ridge_pair
+    x_raw = np.array([features])
+    x_scaled = scaler.transform(x_raw)
+    ridge_pred = float(ridge_model.predict(x_scaled)[0])
+
+    # Only blend HGBR when it matches the Ridge specificity level:
+    # position-specific HGBR with position-specific Ridge, or
+    # global HGBR fallback with global Ridge fallback.
+    has_pos_ridge = pos in _models
+    hgbr = _hgbr_models.get(pos) if has_pos_ridge else _hgbr_model
+    if hgbr is not None:
+        hgbr_pred = float(hgbr.predict(x_raw)[0])
+        return max(0, (ridge_pred + hgbr_pred) / 2)
+
+    return max(0, ridge_pred)
 
 
 def get_model_diagnostics() -> dict | None:
@@ -456,13 +524,20 @@ def get_model_diagnostics() -> dict | None:
             strict=True,
         )
     )
+    hgbr_per_position: dict[str, str] = {}
+    for pos in range(1, 5):
+        if pos in _hgbr_models:
+            hgbr_per_position[_POSITIONS[pos]] = "trained"
+
     return {
         "model_version": MODEL_VERSION,
+        "ensemble": bool(_hgbr_models or _hgbr_model),
         "n_features": len(_FEATURE_NAMES),
         "feature_names": _FEATURE_NAMES,
         "fallback_alpha": round(float(_model.alpha_), 2),
         "fallback_coefficients": fallback_coefs,
         "position_models": per_position,
+        "hgbr_position_models": hgbr_per_position,
     }
 
 

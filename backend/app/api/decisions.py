@@ -260,7 +260,7 @@ async def get_captain_picks(
 
 
 @router.get("/chips", response_model=APIResponse[list[ChipAdvice]])
-@cached("decisions:chips", ttl_seconds=3600)
+@cached("decisions:chips", ttl_seconds=600)
 async def get_chip_advice(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[list[ChipAdvice]]:

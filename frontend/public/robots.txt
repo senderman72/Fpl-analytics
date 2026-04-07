@@ -3,4 +3,4 @@ Allow: /
 Disallow: /my-team
 Disallow: /api/
 
-Sitemap: https://fplanalytics.com/sitemap.xml
+Sitemap: https://fpl-analytics.vercel.app/sitemap.xml

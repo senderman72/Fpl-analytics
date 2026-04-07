@@ -1,0 +1,64 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ShareButtons from '../components/ShareButtons';
+import LineupCard from '../components/LineupCard';
+import { getLineups } from '../api/lineups';
+import { buildCanonical } from '../lib/seo';
+
+let lineups = [];
+try {
+  lineups = await getLineups();
+} catch (err) {
+  console.error('[lineups] Failed to fetch:', err);
+}
+---
+
+<Layout title="Predicted Lineups" description="FPL predicted starting XIs for all 20 Premier League teams — who will start this gameweek?">
+  <div class="flex items-baseline justify-between mb-4">
+    <h1 class="page-title">Predicted Lineups</h1>
+    <span class="text-gray-400 text-sm">{lineups.length} teams</span>
+  </div>
+  <div class="mb-4">
+    <ShareButtons client:idle url={buildCanonical('/lineups')} text="FPL predicted starting XIs for all 20 PL teams" />
+  </div>
+
+  <!-- Legend -->
+  <div class="flex flex-wrap gap-4 mb-6 text-xs">
+    <div class="flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+      <span class="text-gray-400">Likely starter</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+      <span class="text-gray-400">Rotation risk</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-red-500"></span>
+      <span class="text-gray-400">Doubt</span>
+    </div>
+    <span class="text-gray-500">Tap a team to see bench + injury news</span>
+  </div>
+
+  {lineups.length === 0 ? (
+    <div class="card p-8 text-center text-gray-400">
+      No lineup data available yet.
+    </div>
+  ) : (
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      {lineups.map((l) => (
+        <LineupCard client:idle lineup={l} />
+      ))}
+    </div>
+  )}
+
+  <div class="card p-4 mt-6 border-l-3 border-fpl-cyan text-xs">
+    <p class="text-gray-400">
+      Lineups are predicted using playing time (40%), availability (40%), and form (20%) from the last 6 gameweeks.
+      Actual team sheets are released 1 hour before kickoff.
+    </p>
+  </div>
+
+  <script is:inline>
+    if (typeof window.gtag === 'function') gtag('event', 'lineups_viewed');
+  </script>
+</Layout>

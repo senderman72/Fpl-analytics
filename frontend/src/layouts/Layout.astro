@@ -11,7 +11,7 @@ interface Props {
 const {
   title,
   description = 'FPL Analytics — data-driven Fantasy Premier League tools: captain picks, transfer advice, points predictions, and fixture analysis.',
-  ogImage = '/og-default.png',
+  ogImage = '/og-default.svg',
 } = Astro.props;
 const canonicalUrl = buildCanonical(Astro.url.pathname);
 const fullTitle = `${title} | FPL Analytics`;
@@ -33,6 +33,7 @@ const toolsNav = [
   { href: '/decisions/captain', label: 'Captain' },
   { href: '/decisions/chips', label: 'Chips' },
   { href: '/compare', label: 'Compare' },
+  { href: '/lineups', label: 'Lineups' },
 ];
 
 const toolsActive = currentPath.startsWith('/decisions');

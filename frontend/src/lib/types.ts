@@ -371,6 +371,28 @@ export interface TransferPlan {
   bank: number;
 }
 
+export interface LineupPlayer {
+  player_id: number;
+  web_name: string;
+  shirt_url: string | null;
+  position: number;
+  confidence: 'likely' | 'rotation' | 'doubt';
+  chance_of_playing: number | null;
+  minutes_pct: string | null;
+  form_points: number | null;
+  news: string | null;
+  score: string;
+}
+
+export interface PredictedLineup {
+  team_id: number;
+  team_short_name: string;
+  team_badge_url: string | null;
+  formation: string;
+  starters: LineupPlayer[];
+  bench: LineupPlayer[];
+}
+
 export const POSITIONS: Record<number, string> = {
   1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD',
 };

@@ -19,16 +19,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         sentry_sdk.init(dsn=settings.sentry_dsn, traces_sample_rate=0.1)
 
     from app.core.cache import close_redis, init_redis
+    from app.core.database import close_db, init_db
 
+    await init_db()
     await init_redis()
 
     yield
 
     await close_redis()
-
-    from app.core.database import engine
-
-    await engine.dispose()
+    await close_db()
 
 
 def create_app() -> FastAPI:

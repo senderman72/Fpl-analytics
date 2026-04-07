@@ -254,6 +254,8 @@ export interface MyTeamResponse {
   overall_rank: number;
   overall_points: number;
   gameweek_points: number;
+  gameweek_id: number;
+  next_gameweek_id: number;
   bank: number;
   team_value: number;
   starting: MyTeamPick[];

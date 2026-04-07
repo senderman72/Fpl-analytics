@@ -27,6 +27,27 @@ logger = logging.getLogger(__name__)
 
 MODEL_VERSION = "v2"
 
+# Statuses eligible for predictions — active + doubtful with valid chance
+_ELIGIBLE_STATUSES = {"a", "d"}
+
+
+def _should_include_player(
+    status: str,
+    chance: int | None,
+    minutes_pct: float,
+) -> bool:
+    """Determine if a player should receive predictions.
+
+    Includes active players and doubtful players with chance >= 50.
+    Excludes unavailable, injured, suspended, and low-minutes players.
+    """
+    if minutes_pct < 50:
+        return False
+    if status == "a":
+        return True
+    return status == "d" and chance is not None and chance >= 50
+
+
 # Module-level model cache, guarded by _model_lock
 _model_lock = threading.Lock()
 _model: RidgeCV | None = None
@@ -216,12 +237,8 @@ def train_model() -> tuple[RidgeCV, StandardScaler]:
         if not player or not form:
             continue
 
-        # Bug #7: skip players with low chance of playing
-        cop = player.chance_of_playing_next_round
-        if cop is not None and cop < 50:
-            continue
-
-        # Bug #2: skip players with < 50% minutes
+        # Training uses historical data — filter on form quality only,
+        # not current status (a player injured now may have scored in GW28)
         if form.minutes_pct < 50:
             continue
 
@@ -292,14 +309,40 @@ def train_model() -> tuple[RidgeCV, StandardScaler]:
         _model = model
         _scaler = scaler
 
+    r2 = model.score(x_scaled, y)
     logger.info(
         "Points model v2 trained on %d samples from GWs %s, R²=%.3f, alpha=%.1f",
         len(x_rows),
         sorted(recent_gw_ids),
-        model.score(x_scaled, y),
+        r2,
         model.alpha_,
     )
+
+    # Log feature weights for diagnostics
+    coefs = dict(zip(_FEATURE_NAMES, model.coef_, strict=True))
+    sorted_coefs = sorted(coefs.items(), key=lambda x: abs(x[1]), reverse=True)
+    logger.info(
+        "Feature weights (top 10): %s",
+        ", ".join(f"{k}={v:.3f}" for k, v in sorted_coefs[:10]),
+    )
+
     return model, scaler
+
+
+def get_model_diagnostics() -> dict | None:
+    """Return model diagnostics for inspection."""
+    if _model is None or _scaler is None:
+        return None
+    coefs = dict(
+        zip(_FEATURE_NAMES, [round(float(c), 4) for c in _model.coef_], strict=True)
+    )
+    return {
+        "model_version": MODEL_VERSION,
+        "alpha": round(float(_model.alpha_), 2),
+        "n_features": len(_FEATURE_NAMES),
+        "feature_names": _FEATURE_NAMES,
+        "coefficients": coefs,
+    }
 
 
 def predict_gw(gw_id: int) -> list[dict]:
@@ -319,7 +362,7 @@ def predict_gw(gw_id: int) -> list[dict]:
                 (PlayerFormCache.player_id == Player.id)
                 & (PlayerFormCache.gw_window == 6),
             )
-            .filter(Player.status == "a")
+            .filter(Player.status.in_(_ELIGIBLE_STATUSES))
             .all()
         )
 
@@ -343,13 +386,11 @@ def predict_gw(gw_id: int) -> list[dict]:
 
     predictions = []
     for player, team_short, team_code, form in players_data:
-        # Bug #2: raised threshold from 20% to 50%
-        if not form or form.minutes_pct < 50:
-            continue
-
-        # Bug #7: skip injured/doubtful players
-        cop = player.chance_of_playing_next_round
-        if cop is not None and cop < 50:
+        if not form or not _should_include_player(
+            status=player.status,
+            chance=player.chance_of_playing_next_round,
+            minutes_pct=float(form.minutes_pct),
+        ):
             continue
 
         xg = xg_data.get(player.id)
@@ -455,7 +496,7 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
                 (PlayerFormCache.player_id == Player.id)
                 & (PlayerFormCache.gw_window == 6),
             )
-            .filter(Player.status == "a")
+            .filter(Player.status.in_(_ELIGIBLE_STATUSES))
             .all()
         )
 
@@ -480,13 +521,11 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
 
     predictions = []
     for player, team_short, team_code, form in players_data:
-        # Bug #2: raised threshold
-        if not form or form.minutes_pct < 50:
-            continue
-
-        # Bug #7: skip injured/doubtful
-        cop = player.chance_of_playing_next_round
-        if cop is not None and cop < 50:
+        if not form or not _should_include_player(
+            status=player.status,
+            chance=player.chance_of_playing_next_round,
+            minutes_pct=float(form.minutes_pct),
+        ):
             continue
 
         xg = xg_data.get(player.id)

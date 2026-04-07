@@ -19,9 +19,11 @@ function PlayerCard(props: { pick: MyTeamPick; compact?: boolean }) {
       </div>
       <div class="bg-fpl-card/90 backdrop-blur-sm rounded px-1 sm:px-1.5 py-0.5 mt-0.5 sm:mt-1 text-center min-w-[44px] sm:min-w-[56px] md:min-w-[70px]">
         <div class="text-white text-[10px] sm:text-xs font-bold truncate max-w-[52px] sm:max-w-[80px] group-hover:text-fpl-cyan transition-colors">{p.web_name}</div>
-        {p.predicted_points && (
+        {p.predicted_points ? (
           <div class="text-fpl-green text-[9px] sm:text-[11px] font-bold">{p.predicted_points} pts</div>
-        )}
+        ) : p.form_points != null ? (
+          <div class="text-gray-400 text-[9px] sm:text-[11px]">{p.form_points} form</div>
+        ) : null}
       </div>
       {!props.compact && p.fixtures.length > 0 && (
         <div class="hidden sm:flex gap-0.5 mt-1">
@@ -168,10 +170,25 @@ export default function MyTeamView(props: { initialId?: number }) {
                 </div>
               </div>
 
-              {/* Predicted points banner */}
-              <div class="card p-3 mb-4 text-center border-l-3 border-fpl-green">
-                <span class="text-gray-400 text-sm">Predicted points (next GW): </span>
-                <span class="text-fpl-green font-extrabold text-xl ml-1">{t.total_predicted}</span>
+              {/* GW label + predicted points */}
+              <div class="card p-3 mb-4 border-l-3 border-fpl-green">
+                <div class="flex items-center justify-between mb-1">
+                  <div>
+                    <span class="text-white font-bold text-sm">GW{t.gameweek_id} Lineup</span>
+                    {t.next_gameweek_id > 0 && (
+                      <span class="text-gray-500 text-xs ml-2">· Fixtures shown for GW{t.next_gameweek_id}</span>
+                    )}
+                  </div>
+                  <div class="text-right">
+                    <span class="text-gray-400 text-sm">Predicted: </span>
+                    <span class="text-fpl-green font-extrabold text-xl">{t.total_predicted}</span>
+                  </div>
+                </div>
+                {t.next_gameweek_id > t.gameweek_id && (
+                  <p class="text-gray-500 text-xs">
+                    This is your squad from GW{t.gameweek_id}. Any lineup changes or transfers you've made for GW{t.next_gameweek_id} on the FPL site won't show here until that deadline passes.
+                  </p>
+                )}
               </div>
 
               {/* Pitch */}

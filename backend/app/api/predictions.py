@@ -9,7 +9,11 @@ from app.schemas.accuracy import AccuracyResponse
 from app.schemas.common import APIResponse
 from app.schemas.decision import PredictionOut
 from app.services.accuracy import compute_accuracy
-from app.services.points_model import predict_gw, predict_upcoming
+from app.services.points_model import (
+    get_model_diagnostics,
+    predict_gw,
+    predict_upcoming,
+)
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
@@ -71,3 +75,10 @@ async def get_accuracy(
     """Get prediction accuracy metrics (MAE, RMSE, Pearson r, by position)."""
     result = await asyncio.to_thread(compute_accuracy, gw_id)
     return APIResponse(data=result)
+
+
+@router.get("/model/diagnostics")
+async def model_diagnostics() -> APIResponse[dict | None]:
+    """Return model feature weights and hyperparameters for debugging."""
+    diag = get_model_diagnostics()
+    return APIResponse(data=diag)

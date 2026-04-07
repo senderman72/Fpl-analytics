@@ -33,6 +33,8 @@ class MyTeamResponse(BaseModel):
     overall_rank: int
     overall_points: int
     gameweek_points: int
+    gameweek_id: int = 0
+    next_gameweek_id: int = 0
     bank: int  # in tenths
     team_value: int  # in tenths
     starting: list[MyTeamPick]

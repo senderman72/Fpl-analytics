@@ -187,6 +187,8 @@ async def get_my_team(
             overall_rank=manager.get("summary_overall_rank", 0),
             overall_points=manager.get("summary_overall_points", 0),
             gameweek_points=entry_history.get("points", 0),
+            gameweek_id=current_event,
+            next_gameweek_id=next_gw or 0,
             bank=entry_history.get("bank", 0),
             team_value=entry_history.get("value", 0),
             starting=starting,
@@ -329,7 +331,7 @@ async def get_transfer_suggestions(
             Player, Team.short_name, Team.code.label("team_code"),
         )
         .join(Team, Player.team_id == Team.id)
-        .where(Player.status == "a")
+        .where(Player.status.in_({"a", "d"}))
     )
     candidates: list[dict] = []
     for player, team_short, team_code in all_result.all():

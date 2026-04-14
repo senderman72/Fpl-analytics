@@ -9,5 +9,5 @@ const initialId = !isNaN(parsed) && parsed > 0 && parsed < 1e9 ? parsed : undefi
 
 <Layout title="My Team" description="View your FPL team — lineup, predicted points, upcoming fixtures, and transfer suggestions.">
   <h1 class="page-title mb-6">My Team</h1>
-  <MyTeamView client:load initialId={initialId} />
+  <MyTeamView client:only="solid-js" initialId={initialId} />
 </Layout>

@@ -4,8 +4,10 @@ set -e
 # Delete .env if it got copied into the container — Railway sets env vars directly
 rm -f .env
 
-# Debug: print connection target (host only)
+# Debug: print connection targets (host only, secrets masked)
 echo "DATABASE_URL=${DATABASE_URL:-(NOT SET)}" | sed 's/:\/\/[^@]*@/:\/\/***@/'
+echo "REDIS_URL=${REDIS_URL:-(NOT SET)}" | sed 's/:\/\/[^@]*@/:\/\/***@/'
+echo "CELERY_BROKER_URL=${CELERY_BROKER_URL:-(NOT SET — will fall back to REDIS_URL)}" | sed 's/:\/\/[^@]*@/:\/\/***@/'
 
 # Run Alembic migrations on startup
 uv run alembic upgrade head

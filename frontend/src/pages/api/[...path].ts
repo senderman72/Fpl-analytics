@@ -8,7 +8,7 @@ const API_URL = import.meta.env.API_URL || 'http://localhost:8000';
 
 const ALLOWED_PREFIXES = [
   'players', 'predictions', 'decisions', 'gameweeks',
-  'fixtures', 'live', 'my-team', 'lineups', 'health',
+  'fixtures', 'live', 'my-team', 'health',
 ];
 
 function isAllowedPath(path: string): boolean {

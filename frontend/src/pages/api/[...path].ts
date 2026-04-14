@@ -23,7 +23,15 @@ function getCacheControl(path: string): string {
   if (path.startsWith('my-team/')) {
     return 'private, s-maxage=300';
   }
-  return 'public, s-maxage=3600, stale-while-revalidate=86400';
+  // Gameweeks change when GWs start/finish — keep fresh
+  if (path.startsWith('gameweeks')) {
+    return 'public, s-maxage=300, stale-while-revalidate=600';
+  }
+  // Decisions/predictions update after each sync cycle
+  if (path.startsWith('decisions') || path.startsWith('predictions')) {
+    return 'public, s-maxage=600, stale-while-revalidate=1800';
+  }
+  return 'public, s-maxage=1800, stale-while-revalidate=3600';
 }
 
 export const GET: APIRoute = async ({ params, url }) => {

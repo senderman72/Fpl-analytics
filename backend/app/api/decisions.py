@@ -206,23 +206,32 @@ async def get_captain_picks(
         )
         ceilings = {pid: ceil for pid, ceil in ceiling_result.all()}
 
-    # Next GW fixture info
+    # Next GW fixture info — count fixtures per team to detect DGW per team
     next_fixtures: dict[int, dict] = {}
     if next_gw:
         fix_result = await session.execute(
-            select(Fixture, Gameweek.is_double)
-            .outerjoin(Gameweek, Fixture.gameweek_id == Gameweek.id)
-            .where(Fixture.gameweek_id == next_gw)
+            select(Fixture).where(Fixture.gameweek_id == next_gw)
         )
-        for fix, is_double in fix_result.all():
+        # First pass: count fixtures per team
+        team_fixture_count: dict[int, int] = {}
+        gw_fixtures = fix_result.scalars().all()
+        for fix in gw_fixtures:
+            team_fixture_count[fix.home_team_id] = (
+                team_fixture_count.get(fix.home_team_id, 0) + 1
+            )
+            team_fixture_count[fix.away_team_id] = (
+                team_fixture_count.get(fix.away_team_id, 0) + 1
+            )
+        # Second pass: build fixture info with per-team DGW flag
+        for fix in gw_fixtures:
             next_fixtures[fix.home_team_id] = {
                 "is_home": True,
-                "is_double": is_double or False,
+                "is_double": team_fixture_count.get(fix.home_team_id, 0) > 1,
             }
             if fix.away_team_id not in next_fixtures:
                 next_fixtures[fix.away_team_id] = {
                     "is_home": False,
-                    "is_double": is_double or False,
+                    "is_double": team_fixture_count.get(fix.away_team_id, 0) > 1,
                 }
 
     picks = []

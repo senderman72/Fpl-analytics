@@ -234,9 +234,15 @@ def _collect_training_data() -> tuple[
         for t in session.query(Team).all():
             teams[t.id] = t
 
-        gw_double: dict[int, bool] = {}
-        for gw in session.query(Gameweek).all():
-            gw_double[gw.id] = gw.is_double
+        # Count fixtures per team per GW for per-team DGW detection
+        team_gw_fixture_count: dict[tuple[int, int], int] = {}
+        for f in session.query(Fixture).all():
+            if f.gameweek_id is not None:
+                for tid in (f.home_team_id, f.away_team_id):
+                    key = (tid, f.gameweek_id)
+                    team_gw_fixture_count[key] = (
+                        team_gw_fixture_count.get(key, 0) + 1
+                    )
 
     gw_min = min(recent_gw_ids)
     gw_max = max(recent_gw_ids)
@@ -270,7 +276,11 @@ def _collect_training_data() -> tuple[
             if fixture and fixture.home_difficulty is not None
             else 3.0
         )
-        is_dgw = 1.0 if gw_double.get(s.gameweek_id) else 0.0
+        is_dgw = (
+            1.0
+            if team_gw_fixture_count.get((player.team_id, s.gameweek_id), 0) > 1
+            else 0.0
+        )
 
         team = teams.get(player.team_id)
         if is_home:
@@ -571,8 +581,6 @@ def predict_gw(gw_id: int) -> list[dict]:
             xg_data[xg.player_id] = xg
 
         gw_fixtures = session.query(Fixture).filter(Fixture.gameweek_id == gw_id).all()
-        gw_info = session.query(Gameweek).filter(Gameweek.id == gw_id).first()
-        is_dgw = gw_info.is_double if gw_info else False
 
         teams: dict[int, Team] = {}
         for t in session.query(Team).all():
@@ -597,6 +605,9 @@ def predict_gw(gw_id: int) -> list[dict]:
         player_fixtures = team_fixtures.get(player.team_id, [])
         if not player_fixtures:
             continue
+
+        # Per-team DGW: does THIS player's team have 2+ fixtures?
+        is_dgw = len(player_fixtures) > 1
 
         total_predicted = 0.0
         for fix in player_fixtures:
@@ -674,7 +685,6 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
             return []
 
         gw_ids = [gw.id for gw in upcoming_gws]
-        gw_double_map = {gw.id: gw.is_double for gw in upcoming_gws}
         actual_horizon = len(gw_ids)
 
         players_data = (
@@ -725,7 +735,8 @@ def predict_upcoming(horizon: int = 5) -> list[dict]:
         for gw_id in gw_ids:
             team_fix_map = gw_team_fixtures.get(gw_id, {})
             player_fixtures = team_fix_map.get(player.team_id, [])
-            is_dgw = gw_double_map.get(gw_id, False)
+            # Per-team DGW: does THIS player's team have 2+ fixtures?
+            is_dgw = len(player_fixtures) > 1
 
             gw_predicted = 0.0
             for fix in player_fixtures:

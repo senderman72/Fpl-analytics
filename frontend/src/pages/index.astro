@@ -43,7 +43,10 @@ const quickLinks = [
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
     <div class="lg:col-span-2 relative rounded-2xl overflow-hidden">
       <!-- Background image -->
-      <img src="/pl.webp" alt="" class="absolute inset-0 w-full h-full object-cover object-center" fetchpriority="high" width="1200" height="800" decoding="async" />
+      <picture>
+        <source srcset="/pl-mobile.webp" media="(max-width: 640px)" width="640" height="427" />
+        <img src="/pl.webp" alt="" class="absolute inset-0 w-full h-full object-cover object-center" fetchpriority="high" width="1200" height="800" decoding="async" />
+      </picture>
       <div class="absolute inset-0 bg-fpl-dark/75 backdrop-blur-[2px]"></div>
 
       <!-- Content over image -->
@@ -66,7 +69,7 @@ const quickLinks = [
         </div>
 
         <!-- Countdown -->
-        {nextGW && <DeadlineCountdown client:load deadline={nextGW.deadline_time} />}
+        {nextGW && <DeadlineCountdown client:idle deadline={nextGW.deadline_time} />}
 
         <!-- Season progress -->
         <div class="mt-5 pt-4 border-t border-white/10">

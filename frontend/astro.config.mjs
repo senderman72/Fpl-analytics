@@ -11,9 +11,12 @@ export default defineConfig({
   adapter: vercel({
     imageService: true,
   }),
+  build: {
+    // Inline all CSS into HTML — eliminates render-blocking stylesheet request
+    inlineStylesheets: 'always',
+  },
   vite: {
     build: {
-      // Inline small assets (<4KB) to reduce HTTP requests on mobile
       assetsInlineLimit: 4096,
     },
   },

@@ -4,19 +4,14 @@ export default defineConfig({
   presets: [
     presetUno(),
     presetWebFonts({
+      provider: 'google',
       fonts: {
         sans: {
           name: 'Inter',
-          weights: [400, 600, 700],
-          provider: 'google',
-        },
-        mono: {
-          name: 'JetBrains Mono',
-          weights: [400],
-          provider: 'google',
+          weights: ['400', '600', '700'],
         },
       },
-      inlineFonts: false,
+      inlineImports: false,
     }),
   ],
   theme: {

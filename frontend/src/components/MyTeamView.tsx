@@ -126,7 +126,7 @@ function MyTeamViewInner(props: { initialId?: number }) {
             <p>1. Log in to <strong class="text-gray-300">fantasy.premierleague.com</strong></p>
             <p>2. Go to the <strong class="text-gray-300">Points</strong> or <strong class="text-gray-300">Transfers</strong> tab</p>
             <p>3. Your ID is the number in the URL:</p>
-            <p class="font-mono text-gray-300">fantasy.premierleague.com/entry/<strong class="text-fpl-green">2667202</strong>/event/31</p>
+            <p style={{ 'font-family': 'ui-monospace, monospace' }} class="text-gray-300">fantasy.premierleague.com/entry/<strong class="text-fpl-green">2667202</strong>/event/31</p>
           </div>
         </details>
       </form>

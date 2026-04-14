@@ -22,6 +22,7 @@ class PlayerPrice(Base):
     __table_args__ = (
         UniqueConstraint("player_id", "recorded_at", name="uq_prices_player_date"),
         Index("idx_prices_player", "player_id", "recorded_at"),
+        Index("idx_prices_date", "recorded_at"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

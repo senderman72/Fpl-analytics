@@ -15,6 +15,7 @@ class TransferSnapshot(Base):
             "player_id", "recorded_at", name="uq_transfer_snap_player_ts"
         ),
         Index("idx_transfer_snap_player", "player_id", "recorded_at"),
+        Index("idx_transfer_snap_date", "recorded_at"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

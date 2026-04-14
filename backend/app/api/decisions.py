@@ -185,15 +185,31 @@ async def get_captain_picks(
             | (Player.chance_of_playing_next_round.is_(None)),
         )
     )
-    result = await session.execute(stmt)
-    rows = result.all()
+    # Run main query, current GW lookup, and fixture query concurrently
+    current_gw_stmt = select(Gameweek.id).where(Gameweek.is_current == True)  # noqa: E712
 
-    # Ceiling scores (max in last 10 GWs)
-    current_result = await session.execute(
-        select(Gameweek.id).where(Gameweek.is_current == True)  # noqa: E712
+    import asyncio as _aio
+
+    players_task = session.execute(stmt)
+    current_gw_task = session.execute(current_gw_stmt)
+    fix_task = (
+        session.execute(select(Fixture).where(Fixture.gameweek_id == next_gw))
+        if next_gw
+        else None
     )
+
+    if fix_task:
+        result, current_result, fix_result = await _aio.gather(
+            players_task, current_gw_task, fix_task
+        )
+    else:
+        result, current_result = await _aio.gather(players_task, current_gw_task)
+        fix_result = None
+
+    rows = result.all()
     current_gw = current_result.scalar()
 
+    # Ceiling scores (max in last 10 GWs) — needs current_gw so runs after
     ceilings: dict[int, int] = {}
     if current_gw is not None:
         ceiling_result = await session.execute(
@@ -208,10 +224,7 @@ async def get_captain_picks(
 
     # Next GW fixture info — count fixtures per team to detect DGW per team
     next_fixtures: dict[int, dict] = {}
-    if next_gw:
-        fix_result = await session.execute(
-            select(Fixture).where(Fixture.gameweek_id == next_gw)
-        )
+    if fix_result:
         # First pass: count fixtures per team
         team_fixture_count: dict[int, int] = {}
         gw_fixtures = fix_result.scalars().all()

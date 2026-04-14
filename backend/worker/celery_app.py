@@ -11,8 +11,8 @@ settings = get_settings()
 
 celery_app = Celery(
     "fpl_worker",
-    broker=settings.celery_broker_url,
-    backend=settings.celery_result_backend,
+    broker=settings.effective_broker_url,
+    backend=settings.effective_result_backend,
 )
 
 
@@ -41,7 +41,7 @@ celery_app.conf.update(
 )
 
 # Enable TLS when using rediss:// (Railway, Upstash, etc.)
-if settings.celery_broker_url.startswith("rediss://"):
+if settings.effective_broker_url.startswith("rediss://"):
     celery_app.conf.update(
         broker_use_ssl={"ssl_cert_reqs": ssl.CERT_REQUIRED},
         redis_backend_use_ssl={"ssl_cert_reqs": ssl.CERT_REQUIRED},

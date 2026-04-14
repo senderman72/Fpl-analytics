@@ -24,9 +24,17 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379/0"
 
-    # Celery
-    celery_broker_url: str = "redis://localhost:6379/0"
-    celery_result_backend: str = "redis://localhost:6379/1"
+    # Celery — falls back to redis_url when not explicitly set
+    celery_broker_url: str = ""
+    celery_result_backend: str = ""
+
+    @property
+    def effective_broker_url(self) -> str:
+        return self.celery_broker_url or self.redis_url
+
+    @property
+    def effective_result_backend(self) -> str:
+        return self.celery_result_backend or self.redis_url
 
     # FPL API
     fpl_api_base_url: str = "https://fantasy.premierleague.com/api"

@@ -68,23 +68,6 @@ function isActive(href: string) {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={buildCanonical(ogImage)} />
     <title>{fullTitle}</title>
-    <!-- GA4 with Consent Mode v2 — analytics blocked until user accepts -->
-    <script is:inline>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('consent', 'default', {
-        analytics_storage: 'denied',
-        ad_storage: 'denied',
-        ad_user_data: 'denied',
-        ad_personalization: 'denied',
-      });
-      if (localStorage.getItem('cookie_consent') === 'accepted') {
-        gtag('consent', 'update', { analytics_storage: 'granted' });
-      }
-      gtag('js', new Date());
-      gtag('config', 'G-L6SSDG9F6S');
-    </script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-L6SSDG9F6S"></script>
     <style is:global>
       html { scroll-behavior: smooth; overflow-x: hidden; }
       body { overflow-x: hidden; }
@@ -256,5 +239,22 @@ function isActive(href: string) {
         });
       })();
     </script>
+    <!-- GA4 deferred — loaded after paint to avoid blocking FCP/LCP -->
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        analytics_storage: 'denied',
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+      });
+      if (localStorage.getItem('cookie_consent') === 'accepted') {
+        gtag('consent', 'update', { analytics_storage: 'granted' });
+      }
+      gtag('js', new Date());
+      gtag('config', 'G-L6SSDG9F6S');
+    </script>
+    <script defer src="https://www.googletagmanager.com/gtag/js?id=G-L6SSDG9F6S"></script>
   </body>
 </html>

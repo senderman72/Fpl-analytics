@@ -8,5 +8,13 @@ import vercel from '@astrojs/vercel';
 export default defineConfig({
   output: 'server',
   integrations: [solidJs(), UnoCSS({ injectReset: true })],
-  adapter: vercel(),
+  adapter: vercel({
+    imageService: true,
+  }),
+  vite: {
+    build: {
+      // Inline small assets (<4KB) to reduce HTTP requests on mobile
+      assetsInlineLimit: 4096,
+    },
+  },
 });

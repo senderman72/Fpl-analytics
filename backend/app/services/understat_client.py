@@ -7,11 +7,27 @@ season-level xG, xA, npxG, xGChain, xGBuildup per player.
 from typing import Any
 
 import httpx
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 UNDERSTAT_BASE = "https://understat.com"
 HEADERS = {"X-Requested-With": "XMLHttpRequest"}
 
+_understat_retry = retry(
+    retry=retry_if_exception_type(
+        (httpx.HTTPStatusError, httpx.TimeoutException, OSError),
+    ),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=2, min=3, max=60),
+    reraise=True,
+)
 
+
+@_understat_retry
 async def fetch_league_players(
     league: str = "EPL", season: str = "2025"
 ) -> list[dict[str, Any]]:

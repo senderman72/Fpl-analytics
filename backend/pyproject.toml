@@ -19,6 +19,7 @@ dependencies = [
     "scikit-learn>=1.6,<2",
     "beautifulsoup4>=4.12,<5",
     "sentry-sdk[fastapi]>=2.19,<3",
+    "tenacity>=9.0,<10",
 ]
 
 [dependency-groups]

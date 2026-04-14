@@ -1,5 +1,5 @@
-import { SolidApexCharts } from 'solid-apexcharts';
 import { createMemo } from 'solid-js';
+import LazyChart from './LazyChart';
 import { baseChartOptions, FPL_COLORS } from '../lib/chartTheme';
 import { POSITION_COLORS } from '../lib/types';
 import type { ApexOptions } from 'apexcharts';
@@ -77,11 +77,11 @@ export default function AccuracyChart(props: Props) {
     <div style={{ display: 'grid', 'grid-template-columns': '1fr 1fr', gap: '1.5rem' }}>
       <div>
         <h3 style={{ color: '#9ca3af', 'font-size': '0.75rem', 'margin-bottom': '0.5rem', 'font-weight': '500' }}>MAE Over Time</h3>
-        <SolidApexCharts type="line" options={lineOptions()} series={lineSeries()} height={260} />
+        <LazyChart type="line" options={lineOptions()} series={lineSeries()} height={260} />
       </div>
       <div>
         <h3 style={{ color: '#9ca3af', 'font-size': '0.75rem', 'margin-bottom': '0.5rem', 'font-weight': '500' }}>MAE By Position</h3>
-        <SolidApexCharts type="bar" options={barOptions()} series={barSeries()} height={260} />
+        <LazyChart type="bar" options={barOptions()} series={barSeries()} height={260} />
       </div>
     </div>
   );

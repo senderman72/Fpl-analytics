@@ -6,15 +6,14 @@ import { getPriceChanges, getOvernightChanges } from '../../api/decisions';
 import { formatCost } from '../../lib/types';
 import type { OvernightChanges } from '../../lib/types';
 
-const data = await getPriceChanges();
-const { risers, fallers, last_updated } = data;
+const [priceResult, overnightResult] = await Promise.allSettled([
+  getPriceChanges(),
+  getOvernightChanges(),
+]);
 
-let overnight: OvernightChanges | null = null;
-try {
-  overnight = await getOvernightChanges();
-} catch {
-  // No snapshot data yet
-}
+const data = priceResult.status === 'fulfilled' ? priceResult.value : { risers: [], fallers: [], last_updated: null };
+const { risers, fallers, last_updated } = data;
+const overnight: OvernightChanges | null = overnightResult.status === 'fulfilled' ? overnightResult.value : null;
 
 function formatNet(n: number) {
   const abs = Math.abs(n);

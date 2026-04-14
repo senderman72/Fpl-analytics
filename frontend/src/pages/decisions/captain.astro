@@ -11,8 +11,10 @@ import { POSITIONS, formatCost } from '../../lib/types';
 import { STAT_HELP } from '../../lib/explanations';
 import { slugify, buildCanonical } from '../../lib/seo';
 
-const picks = await getCaptainPicks(15);
-const gameweeks = await getGameweeks();
+const [picks, gameweeks] = await Promise.all([
+  getCaptainPicks(15),
+  getGameweeks(),
+]);
 const nextGW = gameweeks.find(gw => gw.is_next);
 const top3 = picks.slice(0, 3);
 const rest = picks.slice(3);

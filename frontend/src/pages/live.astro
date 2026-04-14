@@ -15,7 +15,7 @@ const gwToShow = currentGW ?? lastFinished;
   </div>
 
   {gwToShow ? (
-    <LiveTracker client:only="solid-js" currentGwId={gwToShow.id} />
+    <LiveTracker client:load currentGwId={gwToShow.id} />
   ) : (
     <div class="card p-8 text-center text-gray-400">No gameweek data available.</div>
   )}

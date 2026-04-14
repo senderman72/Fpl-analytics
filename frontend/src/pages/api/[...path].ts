@@ -33,9 +33,8 @@ export const GET: APIRoute = async ({ params, url }) => {
   }
   const target = `${API_URL}/${path}${url.search}`;
   const res = await fetch(target);
-  const data = await res.text();
 
-  return new Response(data, {
+  return new Response(res.body, {
     status: res.status,
     headers: {
       'Content-Type': 'application/json',
@@ -56,10 +55,12 @@ export const POST: APIRoute = async ({ params, url, request }) => {
     headers: { 'Content-Type': 'application/json' },
     body,
   });
-  const data = await res.text();
 
-  return new Response(data, {
+  return new Response(res.body, {
     status: res.status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': getCacheControl(path),
+    },
   });
 };

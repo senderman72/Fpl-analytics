@@ -42,6 +42,15 @@ local_resource(
     labels=['backend'],
 )
 
+# --- Celery beat scheduler (dispatches periodic tasks) ---
+local_resource(
+    'celery-beat',
+    serve_cmd='cd backend && uv run celery -A worker.celery_app beat --loglevel=info',
+    resource_deps=['db-migrate'],
+    deps=['backend/worker'],
+    labels=['backend'],
+)
+
 # --- Frontend deps ---
 local_resource(
     'frontend-deps',

@@ -1,6 +1,6 @@
-const CACHE_NAME = 'fpl-v2';
+const CACHE_NAME = 'fpl-v3';
 const PRECACHE_URLS = ['/', '/manifest.json', '/favicon.svg'];
-const NETWORK_TIMEOUT_MS = 10000;
+const NETWORK_TIMEOUT_MS = 5000;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

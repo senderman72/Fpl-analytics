@@ -19,6 +19,11 @@ reads from cache with FPL API fallback.
 from celery.schedules import crontab
 
 beat_schedule = {
+    # ── Every 60 seconds — heartbeat to prove beat + worker alive ──
+    "heartbeat": {
+        "task": "worker.tasks.heartbeat",
+        "schedule": 60.0,
+    },
     # ── Every 30 seconds — live scores during matches ──
     "sync-live-gw": {
         "task": "worker.tasks.sync_live_gw",

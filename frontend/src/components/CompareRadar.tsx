@@ -1,5 +1,5 @@
-import { SolidApexCharts } from 'solid-apexcharts';
 import { createMemo } from 'solid-js';
+import LazyChart from './LazyChart';
 import { baseChartOptions, FPL_COLORS } from '../lib/chartTheme';
 import type { ApexOptions } from 'apexcharts';
 import type { PlayerComparison } from '../lib/types';
@@ -61,5 +61,5 @@ export default function CompareRadar(props: Props) {
     },
   }));
 
-  return <SolidApexCharts type="radar" options={options()} series={series()} height={340} />;
+  return <LazyChart type="radar" options={options()} series={series()} height={340} />;
 }

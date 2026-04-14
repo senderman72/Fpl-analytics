@@ -3,6 +3,7 @@
 import ssl
 
 from celery import Celery
+from celery.signals import celeryd_init
 
 from app.core.config import get_settings
 
@@ -13,6 +14,20 @@ celery_app = Celery(
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
 )
+
+
+@celeryd_init.connect
+def init_sentry(**kwargs: object) -> None:
+    """Initialise Sentry in the Celery worker process."""
+    if settings.sentry_dsn:
+        import sentry_sdk
+        from sentry_sdk.integrations.celery import CeleryIntegration
+
+        sentry_sdk.init(
+            dsn=settings.sentry_dsn,
+            integrations=[CeleryIntegration()],
+            traces_sample_rate=0.1,
+        )
 
 celery_app.conf.update(
     task_serializer="json",

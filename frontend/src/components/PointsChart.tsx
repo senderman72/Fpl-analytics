@@ -1,5 +1,5 @@
-import { SolidApexCharts } from 'solid-apexcharts';
 import { createMemo } from 'solid-js';
+import LazyChart from './LazyChart';
 import { baseChartOptions, FPL_COLORS } from '../lib/chartTheme';
 import type { ApexOptions } from 'apexcharts';
 
@@ -47,5 +47,5 @@ export default function PointsChart(props: { history: string }) {
     { name: 'Points', data: data().map(h => h.total_points) },
   ]);
 
-  return <SolidApexCharts type="area" options={options()} series={series()} height={220} />;
+  return <LazyChart type="area" options={options()} series={series()} height={220} />;
 }

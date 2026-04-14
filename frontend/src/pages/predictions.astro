@@ -8,8 +8,10 @@ import { getUpcomingPredictions } from '../api/predictions';
 import { POSITIONS, formatCost } from '../lib/types';
 import { buildCanonical } from '../lib/seo';
 
-const gameweeks = await getGameweeks();
-const predictions = await getUpcomingPredictions({ horizon: 5, limit: 50 });
+const [gameweeks, predictions] = await Promise.all([
+  getGameweeks(),
+  getUpcomingPredictions({ horizon: 5, limit: 50 }),
+]);
 const top3 = predictions.slice(0, 3);
 const rest = predictions.slice(3);
 

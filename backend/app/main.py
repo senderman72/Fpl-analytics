@@ -2,10 +2,13 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.database import get_session
 
 
 @asynccontextmanager
@@ -77,6 +80,45 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/health/deep")
+    async def health_deep(
+        session: AsyncSession = Depends(get_session),
+    ) -> dict[str, Any]:
+        from app.core.cache import _redis as redis_client
+        from app.core.health import (
+            check_data_freshness,
+            check_db,
+            check_heartbeat,
+            check_redis,
+        )
+
+        db = await check_db(session)
+
+        if redis_client is not None:
+            redis_result = await check_redis(redis_client)
+            heartbeat = await check_heartbeat(redis_client)
+        else:
+            redis_result = {"status": "not_initialized"}
+            heartbeat = {"status": "not_initialized"}
+
+        freshness = await check_data_freshness(session)
+
+        overall = "ok"
+        if db["status"] != "ok" or redis_result["status"] != "ok":
+            overall = "degraded"
+        if freshness["status"] == "stale":
+            overall = "stale_data"
+
+        return {
+            "status": overall,
+            "checks": {
+                "database": db,
+                "redis": redis_result,
+                "data_freshness": freshness,
+                "celery_heartbeat": heartbeat,
+            },
+        }
 
     return app
 

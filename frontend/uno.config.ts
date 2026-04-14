@@ -8,6 +8,7 @@ export default defineConfig({
         sans: 'Inter:400,500,600,700,800',
         mono: 'JetBrains Mono:400',
       },
+      inlineFonts: true,
     }),
   ],
   theme: {

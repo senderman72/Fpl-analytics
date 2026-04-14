@@ -5,6 +5,7 @@ import datetime as dt
 import logging
 from decimal import Decimal
 
+import httpx
 from sqlalchemy import func, update
 from sqlalchemy.dialects.postgresql import insert
 
@@ -41,8 +42,19 @@ from worker.normaliser import (
 
 logger = logging.getLogger(__name__)
 
+# Exception types that warrant automatic task retry
+_API_RETRYABLE = (httpx.HTTPStatusError, httpx.TimeoutException, OSError)
+_DB_RETRYABLE = (Exception,)
 
-@celery_app.task(name="worker.tasks.sync_bootstrap")
+
+@celery_app.task(
+    name="worker.tasks.sync_bootstrap",
+    autoretry_for=_API_RETRYABLE,
+    max_retries=3,
+    retry_backoff=60,
+    retry_backoff_max=300,
+    retry_jitter=True,
+)
 def sync_bootstrap() -> dict[str, int]:
     """Fetch /bootstrap-static/ and upsert teams, players, and gameweeks."""
     data = asyncio.run(fetch_bootstrap())
@@ -95,7 +107,14 @@ def sync_bootstrap() -> dict[str, int]:
     return counts
 
 
-@celery_app.task(name="worker.tasks.sync_transfer_counts")
+@celery_app.task(
+    name="worker.tasks.sync_transfer_counts",
+    autoretry_for=_API_RETRYABLE,
+    max_retries=3,
+    retry_backoff=60,
+    retry_backoff_max=300,
+    retry_jitter=True,
+)
 def sync_transfer_counts() -> dict[str, int]:
     """Lightweight bootstrap sync: update transfer counts + snapshot velocity."""
     data = asyncio.run(fetch_bootstrap())
@@ -146,7 +165,14 @@ def sync_transfer_counts() -> dict[str, int]:
     return {"players_updated": len(data["elements"]), "snapshots": len(snapshot_rows)}
 
 
-@celery_app.task(name="worker.tasks.sync_fixtures")
+@celery_app.task(
+    name="worker.tasks.sync_fixtures",
+    autoretry_for=_API_RETRYABLE,
+    max_retries=3,
+    retry_backoff=60,
+    retry_backoff_max=300,
+    retry_jitter=True,
+)
 def sync_fixtures() -> dict[str, int]:
     """Fetch /fixtures/ and upsert all fixtures. Then detect DGW/BGW."""
     raw_fixtures = asyncio.run(fetch_fixtures())
@@ -173,7 +199,14 @@ def sync_fixtures() -> dict[str, int]:
     return {"fixtures": len(fixtures)}
 
 
-@celery_app.task(name="worker.tasks.sync_player_history")
+@celery_app.task(
+    name="worker.tasks.sync_player_history",
+    autoretry_for=_API_RETRYABLE,
+    max_retries=3,
+    retry_backoff=60,
+    retry_backoff_max=300,
+    retry_jitter=True,
+)
 def sync_player_history() -> dict[str, int]:
     """Fetch GW history for active players and upsert into player_gw_stats.
 
@@ -246,7 +279,14 @@ def sync_player_history() -> dict[str, int]:
     return {"player_gw_stats": total, "failed": failed}
 
 
-@celery_app.task(name="worker.tasks.sync_price_snapshot")
+@celery_app.task(
+    name="worker.tasks.sync_price_snapshot",
+    autoretry_for=_API_RETRYABLE,
+    max_retries=3,
+    retry_backoff=60,
+    retry_backoff_max=300,
+    retry_jitter=True,
+)
 def sync_price_snapshot() -> dict[str, int]:
     """Take a daily price snapshot from /bootstrap-static/ for all players."""
     data = asyncio.run(fetch_bootstrap())
@@ -310,7 +350,14 @@ def _detect_dgw_bgw() -> None:
         logger.info("DGW/BGW detection complete for %d gameweeks", len(all_gw_ids))
 
 
-@celery_app.task(name="worker.tasks.sync_understat")
+@celery_app.task(
+    name="worker.tasks.sync_understat",
+    autoretry_for=_API_RETRYABLE,
+    max_retries=3,
+    retry_backoff=60,
+    retry_backoff_max=300,
+    retry_jitter=True,
+)
 def sync_understat(season: str = "2025") -> dict[str, int]:
     """Fetch Understat season xG stats and match to FPL players.
 
@@ -389,7 +436,13 @@ def sync_understat(season: str = "2025") -> dict[str, int]:
     return {"player_season_xg": len(rows), "matched": len(fpl_to_understat)}
 
 
-@celery_app.task(name="worker.tasks.recompute_form_cache")
+@celery_app.task(
+    name="worker.tasks.recompute_form_cache",
+    autoretry_for=_DB_RETRYABLE,
+    max_retries=2,
+    retry_backoff=30,
+    retry_jitter=True,
+)
 def recompute_form_cache() -> dict[str, int]:
     """Recompute rolling form windows (4, 6, 10 GWs) for all players.
 
@@ -547,7 +600,13 @@ def recompute_form_cache() -> dict[str, int]:
     return {"form_rows": len(all_rows)}
 
 
-@celery_app.task(name="worker.tasks.backfill_actuals")
+@celery_app.task(
+    name="worker.tasks.backfill_actuals",
+    autoretry_for=_DB_RETRYABLE,
+    max_retries=2,
+    retry_backoff=30,
+    retry_jitter=True,
+)
 def backfill_actuals() -> dict[str, int]:
     """Fill actual_points on PredictionLog rows from finished gameweeks."""
     from app.models.prediction_log import PredictionLog
@@ -607,7 +666,13 @@ def backfill_actuals() -> dict[str, int]:
     return {"backfilled": filled}
 
 
-@celery_app.task(name="worker.tasks.run_predictions")
+@celery_app.task(
+    name="worker.tasks.run_predictions",
+    autoretry_for=_DB_RETRYABLE,
+    max_retries=2,
+    retry_backoff=30,
+    retry_jitter=True,
+)
 def run_predictions() -> dict[str, int]:
     """Train model and store predictions for the next unfinished GW."""
     from app.services.points_model import (
@@ -640,7 +705,14 @@ def run_predictions() -> dict[str, int]:
     return {"gw_id": gw_id, "predictions": stored}
 
 
-@celery_app.task(name="worker.tasks.sync_live_gw")
+@celery_app.task(
+    name="worker.tasks.sync_live_gw",
+    autoretry_for=_API_RETRYABLE,
+    max_retries=3,
+    retry_backoff=30,
+    retry_backoff_max=120,
+    retry_jitter=True,
+)
 def sync_live_gw() -> dict[str, object]:
     """Fetch live scores for the current GW and cache in Redis.
 
@@ -697,7 +769,33 @@ def sync_live_gw() -> dict[str, object]:
     return {"gw_id": gw_id, "players": player_count}
 
 
-@celery_app.task(name="worker.tasks.warm_caches")
+@celery_app.task(name="worker.tasks.heartbeat")
+def heartbeat() -> dict[str, str]:
+    """Write a timestamp to Redis to prove beat + worker are running."""
+    import redis as sync_redis
+
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    client = sync_redis.from_url(settings.redis_url, decode_responses=True)
+    try:
+        client.set(
+            "celery:heartbeat",
+            dt.datetime.now(dt.UTC).isoformat(),
+            ex=300,
+        )
+    finally:
+        client.close()
+    return {"status": "ok"}
+
+
+@celery_app.task(
+    name="worker.tasks.warm_caches",
+    autoretry_for=_DB_RETRYABLE,
+    max_retries=2,
+    retry_backoff=30,
+    retry_jitter=True,
+)
 def warm_caches() -> dict[str, int]:
     """Hit key API endpoints to pre-populate Redis cache after data sync.
 

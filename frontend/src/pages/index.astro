@@ -17,11 +17,14 @@ const gameweeks = await getGameweeks();
 const currentGW = gameweeks.find(gw => gw.is_current);
 const nextGW = gameweeks.find(gw => gw.is_next);
 const finishedCount = gameweeks.filter(gw => gw.is_finished).length;
-const captains = await getCaptainPicks(5);
-const buys = await getBuyCandidates({ limit: 3 });
-const trending = await getPlayers({ sort_by: 'form_points', limit: 10 });
+
+const [captains, buys, trending, differentials] = await Promise.all([
+  getCaptainPicks(5),
+  getBuyCandidates({ limit: 3 }),
+  getPlayers({ sort_by: 'form_points', limit: 10 }),
+  getDifferentials({ limit: 5 }),
+]);
 const trendingSorted = [...trending].sort((a, b) => (b.transfers_in_event ?? 0) - (a.transfers_in_event ?? 0)).slice(0, 5);
-const differentials = await getDifferentials({ limit: 5 });
 
 const topCaptain = captains[0];
 

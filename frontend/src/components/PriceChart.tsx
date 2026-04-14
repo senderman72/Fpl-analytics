@@ -1,5 +1,5 @@
-import { SolidApexCharts } from 'solid-apexcharts';
 import { createMemo } from 'solid-js';
+import LazyChart from './LazyChart';
 import { baseChartOptions, FPL_COLORS } from '../lib/chartTheme';
 import type { ApexOptions } from 'apexcharts';
 
@@ -36,5 +36,5 @@ export default function PriceChart(props: { history: string }) {
     { name: 'Price', data: prices() },
   ]);
 
-  return <SolidApexCharts type="line" options={options()} series={series()} height={100} />;
+  return <LazyChart type="line" options={options()} series={series()} height={100} />;
 }

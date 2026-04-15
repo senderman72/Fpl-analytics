@@ -55,9 +55,9 @@ async def init_db() -> None:
         _async_url(settings.database_url),
         echo=settings.debug,
         pool_pre_ping=True,
-        pool_size=10,
-        max_overflow=5,
-        pool_timeout=30,
+        pool_size=20,
+        max_overflow=10,
+        pool_timeout=10,
         pool_recycle=300,
     )
     _async_session_factory = async_sessionmaker(

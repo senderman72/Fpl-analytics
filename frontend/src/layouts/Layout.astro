@@ -1,5 +1,4 @@
 ---
-import { ClientRouter } from 'astro:transitions';
 import { buildCanonical } from '../lib/seo';
 import CookieConsent from '../components/CookieConsent';
 import InstallPrompt from '../components/InstallPrompt';
@@ -72,7 +71,6 @@ function isActive(href: string) {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={buildCanonical(ogImage)} />
     <title>{fullTitle}</title>
-    <ClientRouter />
     <style is:global>
       html { scroll-behavior: smooth; overflow-x: hidden; }
       body { overflow-x: hidden; }

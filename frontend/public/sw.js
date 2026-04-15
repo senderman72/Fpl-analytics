@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fpl-v4';
+const CACHE_NAME = 'fpl-v5';
 const PRECACHE_URLS = ['/', '/manifest.json', '/favicon.svg', '/pl.webp', '/pl-mobile.webp'];
 const NETWORK_TIMEOUT_MS = 5000;
 

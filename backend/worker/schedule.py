@@ -48,10 +48,10 @@ beat_schedule = {
         "task": "worker.tasks.sync_understat",
         "schedule": crontab(minute=20, hour="0,6,12,18"),
     },
-    # ── Daily at 03:00 UTC — snapshots + heavy compute ──
+    # ── Daily at 02:45 UTC — right after FPL's ~02:30 UTC price change cutover ──
     "sync-price-snapshot": {
         "task": "worker.tasks.sync_price_snapshot",
-        "schedule": crontab(hour=3, minute=5),
+        "schedule": crontab(hour=2, minute=45),
     },
     "sync-player-history": {
         "task": "worker.tasks.sync_player_history",

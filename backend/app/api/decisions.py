@@ -374,7 +374,7 @@ async def get_differentials(
 
 
 @router.get("/price-changes", response_model=APIResponse[PriceChangePrediction])
-@cached("decisions:prices", ttl_seconds=600)
+@cached("decisions:prices", ttl_seconds=120)
 async def get_price_changes(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[PriceChangePrediction]:
@@ -464,11 +464,14 @@ async def get_price_changes(
             predicted_price=predicted_price,
         )
 
+        # Players who already changed today are locked out — only show them in
+        # the `already_changed` list, not in risers/fallers (they can't change
+        # again tonight).
         if is_changed:
             changed.append(candidate)
         elif net > 0:
             risers.append(candidate)
-        else:
+        elif net < 0:
             fallers.append(candidate)
 
         if last_updated is None or (
@@ -506,7 +509,7 @@ def _is_snapshot_fresh(snapshot_date: dt.date) -> bool:
     "/overnight-changes",
     response_model=APIResponse[OvernightChanges],
 )
-@cached("decisions:overnight", ttl_seconds=300)
+@cached("decisions:overnight", ttl_seconds=60)
 async def get_overnight_changes(
     session: AsyncSession = Depends(get_session),
 ) -> APIResponse[OvernightChanges]:

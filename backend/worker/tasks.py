@@ -140,7 +140,7 @@ def sync_transfer_counts() -> dict[str, int]:
                 )
             )
 
-            if abs(net) >= 5000:
+            if abs(net) >= 500:
                 snapshot_rows.append(
                     normalise_transfer_snapshot(raw["id"], tin, tout, now)
                 )

@@ -1,0 +1,41 @@
+[    2343ms] Uncaught Error: Unauthorized
+    at <anonymous> (https://c.amazon-adsystem.com/aax2/apstag.js:1:6076)
+    at <anonymous> (https://c.amazon-adsystem.com/aax2/apstag.js:5:1)
+[    2461ms] [LOG] [11, 3, 0, 1] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2462ms] [LOG] [11, 3, 0, 1] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2467ms] [LOG] [11, 3, 0, 4] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2467ms] [LOG] [11, 3, 0, 4] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2468ms] [LOG] [11, 3, 0, 5] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2468ms] [LOG] [11, 3, 0, 5] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2470ms] [LOG] [11, 3, 0, 2] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2470ms] [LOG] [11, 3, 0, 2] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2471ms] [WARNING] Invalid GPT fixed size specification: [] @ https://securepubads.g.doubleclick.net/pagead/managed/js/gpt/m202604100101/pubads_impl.js?cb=31097815:18
+[    2471ms] [LOG] [11, 3, 0, 0] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2471ms] [LOG] [11, 3, 0, 0] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2471ms] [WARNING] Invalid GPT fixed size specification: [] @ https://securepubads.g.doubleclick.net/pagead/managed/js/gpt/m202604100101/pubads_impl.js?cb=31097815:18
+[    2472ms] [LOG] [11, 3, 0, 7] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2472ms] [LOG] [11, 3, 0, 7] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2472ms] [LOG] [11, 3, 0, 2] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2472ms] [LOG] [11, 3, 0, 2] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2473ms] [WARNING] Invalid GPT fixed size specification: [] @ https://securepubads.g.doubleclick.net/pagead/managed/js/gpt/m202604100101/pubads_impl.js?cb=31097815:18
+[    2473ms] [LOG] [11, 3, 0, 0] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2473ms] [LOG] [11, 3, 0, 0] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2473ms] [WARNING] Invalid GPT fixed size specification: [] @ https://securepubads.g.doubleclick.net/pagead/managed/js/gpt/m202604100101/pubads_impl.js?cb=31097815:18
+[    2473ms] [LOG] [11, 3, 0, 7] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2473ms] [LOG] [11, 3, 0, 7] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2474ms] [LOG] [11, 3, 0, 2] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2474ms] [LOG] [11, 3, 0, 2] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2474ms] [WARNING] Invalid GPT fixed size specification: [] @ https://securepubads.g.doubleclick.net/pagead/managed/js/gpt/m202604100101/pubads_impl.js?cb=31097815:18
+[    2474ms] [LOG] [11, 3, 0, 0] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2474ms] [LOG] [11, 3, 0, 0] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2475ms] [WARNING] Invalid GPT fixed size specification: [] @ https://securepubads.g.doubleclick.net/pagead/managed/js/gpt/m202604100101/pubads_impl.js?cb=31097815:18
+[    2475ms] [LOG] [11, 3, 0, 7] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2475ms] [LOG] [11, 3, 0, 7] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2477ms] [LOG] [11, 3, 0, 6] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2477ms] [LOG] [11, 3, 0, 1] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2478ms] [LOG] [11, 3, 0, 6] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2478ms] [LOG] [11, 3, 0, 1] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2478ms] [LOG] [11, 3, 0, 6] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2478ms] [LOG] [11, 3, 0, 1] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2576ms] [LOG] [11, 3, 0, 3] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
+[    2576ms] [LOG] [11, 3, 0, 3] @ https://cdn.intergient.com/pf?country=SE&browser=Chrome&device=desktop&website_id=74959:0
